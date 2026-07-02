@@ -1,0 +1,44 @@
+name: Publicar dashboard (GitHub Pages)
+
+on:
+  workflow_dispatch: {}          # lanzable a mano; el primer run activa Pages
+  push:
+    branches: [main]
+  workflow_run:                  # republica tras cada análisis/reentrenamiento
+    workflows:
+      - "Agente autónomo (análisis + alertas)"
+      - "Entrenar modelo ML (1 año Binance)"
+    types: [completed]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main              # siempre lo último de main, con data/ al día
+
+      - name: Configurar (y activar si hace falta) GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Desplegar
+        id: deployment
+        uses: actions/deploy-pages@v4
