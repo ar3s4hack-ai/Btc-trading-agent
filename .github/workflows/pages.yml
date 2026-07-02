@@ -4,7 +4,9 @@ on:
   workflow_dispatch: {}          # lanzable a mano; el primer run activa Pages
   push:
     branches: [main]
-  workflow_run:                  # republica tras cada análisis/reentrenamiento
+  schedule:
+    - cron: '9,39 * * * *'       # justo después de cada pasada del agente (:00/:30)
+  workflow_run:                  # y también al acabar análisis/reentrenamiento
     workflows:
       - "Agente autónomo (análisis + alertas)"
       - "Entrenar modelo ML (1 año Binance)"
