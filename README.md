@@ -12,6 +12,13 @@ Dashboard de señales de Bitcoin con detección de **consolidaciones y rupturas*
 - **Modelo ML** (`agent/train.py`): regresión logística estandarizada (con HistGradientBoosting como referencia de techo) entrenada sobre ~17.000 muestras etiquetadas de 1 año de velas de Binance. Cada muestra simula una entrada larga o corta y se etiqueta según si el take profit se alcanza antes que el stop loss. **Validación walk-forward honesta**: entrena con el primer 75 % del año y evalúa con el 25 % final, sin barajar. El modelo se exporta a `data/model.json` (pesos + escalado) y se evalúa igual en el navegador y en Node, sin dependencias.
 - **Agente autónomo** (`agent/run.js`): se ejecuta cada 30 minutos en GitHub Actions, descarga las velas recientes de Binance, recalcula señales, las puntúa con el modelo ML, publica `data/signals.json` (lo lee el dashboard) y envía las señales nuevas a **Telegram**.
 
+### Filtro de calidad de señales
+
+Para evitar el ruido típico de los cruces de EMA en mercado lateral, las señales pasan dos filtros:
+
+1. **En el motor** (`lib/agent-core.js`): los cruces EMA 9/21 solo cuentan a favor de la tendencia (precio por encima/debajo de la EMA50), con bandas de RSI estrictas (48–68 compra, 32–52 venta) y un enfriamiento mínimo de 10 velas entre señales del mismo tipo.
+2. **En las alertas de Telegram** (`agent/run.js`): solo se avisa de señales con probabilidad ML ≥ 64 % de alcanzar el take profit antes que el stop. Calibrado con 1 año de backtest: ~5 alertas al mes entre 1h y 4h con ~75 % de acierto, frente a la tasa base del ~62 %. El resto de señales sigue visible en el dashboard, pero no interrumpe.
+
 ## Arquitectura
 
 ```

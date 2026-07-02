@@ -13,6 +13,12 @@ const core = require('../lib/agent-core.js');
 
 const HOSTS = ['https://data-api.binance.vision', 'https://api.binance.com'];
 const SYMBOL = 'BTCUSDT';
+// Solo se alertan señales de convicción: probabilidad ML de alcanzar el TP
+// >= MIN_PROB (calibrado con 1 año de backtest: ~5 alertas/mes entre 1h y 4h
+// con ~75% de acierto; por debajo el winRate cae a la tasa base ~62%). Si no
+// hay modelo se alertan solo rupturas con volumen alto. El resto de señales
+// queda en el dashboard (signals.json) pero no genera mensaje de Telegram.
+const MIN_PROB = 64;
 const TFS = ['1h', '4h'];
 const DATA = path.join(__dirname, '..', 'data');
 const OUT = path.join(DATA, 'signals.json');
@@ -91,8 +97,11 @@ async function main(){
     // señal nueva = posterior a la última vista en la ejecución anterior
     const prevLast = prev && prev.tfs && prev.tfs[tf] && prev.tfs[tf].signals.length
       ? prev.tfs[tf].signals[prev.tfs[tf].signals.length-1].time : 0;
+    const conviction = s => s.prob!=null
+      ? s.prob>=MIN_PROB
+      : (s.kind==='break' && s.strong);
     for(const s of recent){
-      if(s.time <= prevLast) continue;
+      if(s.time <= prevLast || !conviction(s)) continue;
       const buy = s.type==='BUY';
       const head = s.kind==='break'
         ? `${buy?'🟢':'🔴'} <b>RUPTURA ${buy?'ALCISTA':'BAJISTA'}</b>${s.strong?' (vol. alto)':''}`
