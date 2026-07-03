@@ -344,18 +344,23 @@ footer a:hover{color:var(--accent)}
   <!-- PAPER TRADING -->
   <div class="panel" style="margin-top:12px">
     <div class="panel-head">
-      <span class="panel-title"><b>Paper trading</b> · el agente opera solo con dinero ficticio (10.000 USDT virtuales)</span>
+      <span class="panel-title"><b>Paper trading A/B</b> · dos carteras simuladas compiten con las mismas señales (10.000 USDT virtuales cada una)</span>
       <span class="panel-title" id="ptUpdated"></span>
     </div>
     <div class="strat" style="display:grid;grid-template-columns:1fr 1fr;gap:0 2rem">
-      <div class="strat-row"><span class="strat-k">Equity</span><span class="strat-v" id="ptEquity">—</span></div>
-      <div class="strat-row"><span class="strat-k">P&amp;L total</span><span class="strat-v" id="ptPnl">—</span></div>
-      <div class="strat-row"><span class="strat-k">Operaciones cerradas</span><span class="strat-v" id="ptClosed">—</span></div>
+      <div class="strat-row"><span class="strat-k">Cartera A · TP/SL actual</span><span class="strat-v" id="ptEqA">—</span></div>
+      <div class="strat-row"><span class="strat-k">Cartera B · TP/SL 2%/2% en 1h</span><span class="strat-v" id="ptEqB">—</span></div>
+      <div class="strat-row"><span class="strat-k">Operaciones A</span><span class="strat-v" id="ptOpsA">—</span></div>
+      <div class="strat-row"><span class="strat-k">Operaciones B</span><span class="strat-v" id="ptOpsB">—</span></div>
       <div class="strat-row"><span class="strat-k">Posiciones abiertas</span><span class="strat-v" id="ptOpen">—</span></div>
       <div class="strat-row"><span class="strat-k">Tamaño por operación</span><span class="strat-v">10% del balance · comisión 0,1%/lado</span></div>
-      <div class="strat-row"><span class="strat-k">Última operación</span><span class="strat-v" id="ptLast">—</span></div>
     </div>
-    <div id="ptChart" style="height:130px;margin-top:10px"></div>
+    <div class="legend" style="margin-top:10px">
+      <span><span class="lk" style="background:#c8f135"></span>cartera A</span>
+      <span><span class="lk" style="background:#5aa7e8"></span>cartera B</span>
+      <span><span class="lk" style="background:transparent;border-top:1px dashed var(--gray);height:0"></span>balance inicial</span>
+    </div>
+    <div id="ptChart" style="height:130px;margin-top:6px"></div>
     <div class="empty-msg" id="ptMsg">esperando la primera pasada del agente autónomo…</div>
   </div>
 
@@ -738,28 +743,31 @@ function updateML(){
   $('mlProb').textContent = p!=null ? `${p}% (${last.type==='BUY'?'compra':'venta'} ${tf})` : '—';
   $('mlProb').style.color = p!=null && p>=55 ? 'var(--accent)' : '';
 }
-/* ── paper trading: cartera simulada del agente (data/trades.json) ── */
-let ptChart = null, ptSeries = null;
-function renderPaper(led){
-  const eq = led.equity.length ? led.equity[led.equity.length-1].e : led.balance;
-  const pnl = eq - led.start_balance, pct = pnl/led.start_balance*100;
+/* ── paper trading A/B: carteras simuladas del agente (data/trades*.json) ── */
+let ptChart = null, ptSeriesA = null, ptSeriesB = null;
+function renderPaper(a, b){
   const money = n => n.toLocaleString('es-ES',{maximumFractionDigits:2}) + ' USDT';
   const sign = n => (n>=0?'+':'') + n.toLocaleString('es-ES',{maximumFractionDigits:2});
-  $('ptEquity').textContent = money(eq);
-  $('ptPnl').textContent = `${sign(pnl)} USDT (${sign(Math.round(pct*100)/100)}%)`;
-  $('ptPnl').style.color = pnl >= 0 ? 'var(--accent)' : 'var(--sell)';
-  const st = led.stats || {closed:0, wins:0};
-  $('ptClosed').textContent = st.closed
-    ? `${st.closed} · ${Math.round(st.wins/st.closed*100)}% con beneficio` : 'ninguna todavía';
-  $('ptOpen').textContent = led.open.length
-    ? led.open.map(p=>`${p.type==='BUY'?'▲':'▼'} ${p.tf} @ $${fmt(p.entry,0)}`).join(' · ') : 'ninguna';
-  const last = led.closed[led.closed.length-1];
-  $('ptLast').textContent = last
-    ? `${last.type==='BUY'?'compra':'venta'} ${last.tf} → ${sign(last.pnl)} USDT (${last.reason})` : '—';
-  if(last) $('ptLast').style.color = last.pnl >= 0 ? 'var(--accent)' : 'var(--sell)';
-  $('ptUpdated').textContent = led.updated_at
-    ? '🤖 ' + new Date(led.updated_at).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
-  if(led.equity.length < 2){ $('ptMsg').textContent = 'la curva de equity aparecerá con más pasadas del agente'; return; }
+  const eqOf = l => l.equity.length ? l.equity[l.equity.length-1].e : l.start_balance;
+  const setEq = (id, l) => {
+    const eq = eqOf(l), pnl = eq - l.start_balance;
+    $(id).textContent = `${money(eq)} (${sign(pnl)})`;
+    $(id).style.color = pnl > 0 ? 'var(--accent)' : (pnl < 0 ? 'var(--sell)' : '');
+  };
+  const setOps = (id, l) => {
+    const st = l.stats || {closed:0, wins:0, pnl_total:0};
+    $(id).textContent = st.closed
+      ? `${st.closed} cerradas · ${Math.round(st.wins/st.closed*100)}% beneficio · P&L ${sign(st.pnl_total)}`
+      : 'ninguna todavía';
+  };
+  const openTxt = l => l.open.length
+    ? l.open.map(p=>`${p.type==='BUY'?'▲':'▼'} ${p.tf} @ $${fmt(p.entry,0)}`).join(', ') : 'ninguna';
+  setEq('ptEqA', a); setOps('ptOpsA', a);
+  if(b){ setEq('ptEqB', b); setOps('ptOpsB', b); }
+  $('ptOpen').textContent = `A: ${openTxt(a)} · B: ${b ? openTxt(b) : '—'}`;
+  $('ptUpdated').textContent = a.updated_at
+    ? '🤖 ' + new Date(a.updated_at).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+  if(a.equity.length < 2){ $('ptMsg').textContent = 'la curva de equity aparecerá con más pasadas del agente'; return; }
   $('ptMsg').style.display = 'none';
   if(!ptChart){
     ptChart = LightweightCharts.createChart($('ptChart'), {
@@ -775,23 +783,24 @@ function renderPaper(led){
       },
       handleScroll:false, handleScale:false,
     });
-    ptSeries = ptChart.addBaselineSeries({
-      baseValue:{type:'price', price:led.start_balance},
-      topLineColor:'#c8f135', topFillColor1:'rgba(200,241,53,0.22)', topFillColor2:'rgba(200,241,53,0.02)',
-      bottomLineColor:'#f0524f', bottomFillColor1:'rgba(240,82,79,0.02)', bottomFillColor2:'rgba(240,82,79,0.22)',
-      lineWidth:2, priceLineVisible:false, crosshairMarkerVisible:true,
-    });
-    ptSeries.createPriceLine({price:led.start_balance, color:'rgba(107,122,110,0.5)',
+    ptSeriesA = ptChart.addLineSeries({color:'#c8f135', lineWidth:2,
+      priceLineVisible:false, crosshairMarkerVisible:true, title:'A'});
+    ptSeriesB = ptChart.addLineSeries({color:'#5aa7e8', lineWidth:2,
+      priceLineVisible:false, crosshairMarkerVisible:true, title:'B'});
+    ptSeriesA.createPriceLine({price:a.start_balance, color:'rgba(107,122,110,0.5)',
       lineWidth:1, lineStyle:2, axisLabelVisible:false});
   }
-  ptSeries.setData(led.equity.map(p=>({time:p.t, value:p.e})));
+  ptSeriesA.setData(a.equity.map(p=>({time:p.t, value:p.e})));
+  if(b) ptSeriesB.setData(b.equity.map(p=>({time:p.t, value:p.e})));
   ptChart.timeScale().fitContent();
 }
 async function loadPaper(){
-  try{
-    const res = await fetch('data/trades.json?t='+Date.now());
-    if(res.ok) renderPaper(await res.json());
-  }catch(e){}
+  const get = async f => {
+    try{ const r = await fetch(f+'?t='+Date.now()); return r.ok ? await r.json() : null; }
+    catch(e){ return null; }
+  };
+  const [a, b] = await Promise.all([get('data/trades.json'), get('data/trades-b.json')]);
+  if(a) renderPaper(a, b);
 }
 
 async function loadML(){
