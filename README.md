@@ -32,8 +32,9 @@ agent/
   fetch_data.py                 ← descarga 1 año de velas 1h/4h de Binance
   train.py                      ← entrena y exporta el modelo a data/model.json
   run.js                        ← análisis cada 30 min + alertas Telegram
-  paper.js                      ← cartera simulada: abre/cierra posiciones y
-                                   mantiene data/trades.json (sin dinero real)
+  paper.js                      ← carteras simuladas: abre/cierra posiciones y
+                                   mantiene data/trades*.json (sin dinero real)
+  report.js                     ← resumen semanal A/B por Telegram (domingos)
 .github/workflows/
   train-model.yml               ← "Entrenar modelo ML (1 año Binance)" — manual
                                    y cada lunes de madrugada

@@ -1,0 +1,23 @@
+name: Resumen semanal A/B (Telegram)
+
+on:
+  workflow_dispatch: {}          # lanzable a mano para probarlo
+  schedule:
+    - cron: '0 18 * * 0'         # domingos 18:00 UTC (20:00 en España en verano)
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enviar resumen del paper trading A/B
+        env:
+          # Los mismos secrets que el agente. Sin ellos, el resumen solo
+          # se imprime en el log del workflow.
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node agent/report.js
