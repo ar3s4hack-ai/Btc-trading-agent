@@ -27,10 +27,10 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: node agent/run.js
 
-      - name: Publicar signals.json
+      - name: Publicar signals.json y trades.json
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/signals.json
-          git diff --cached --quiet || git commit -m "chore: actualizar señales del agente [skip ci]"
+          git add data/signals.json data/trades.json
+          git diff --cached --quiet || git commit -m "chore: actualizar señales y paper trading [skip ci]"
           git push
