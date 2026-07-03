@@ -1,0 +1,18 @@
+{
+ "start_balance": 200,
+ "balance": 200,
+ "stats": {
+  "closed": 0,
+  "wins": 0,
+  "pnl_total": 0
+ },
+ "open": [],
+ "closed": [],
+ "equity": [
+  {
+   "t": 1783062780,
+   "e": 200
+  }
+ ],
+ "updated_at": "2026-07-03T07:13:00.000Z"
+}
