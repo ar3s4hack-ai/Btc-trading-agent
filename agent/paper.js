@@ -5,8 +5,8 @@
    Comisión 0.1% por lado (taker de Binance), aplicada al cerrar. */
 'use strict';
 
-const START_BALANCE = 10000;   // USDT virtuales
-const STAKE_FRACTION = 0.10;   // fracción del balance por operación
+const START_BALANCE = 200;     // USDT virtuales (espejo de una cartera real pequeña)
+const STAKE_FRACTION = 0.10;   // fracción del balance por operación (~20 USDT)
 const FEE = 0.001;             // 0.1% por lado
 const MAX_EQUITY_POINTS = 3000; // ~2 meses de puntos cada 30 min
 const MAX_CLOSED = 200;         // historial de cerradas en el JSON
@@ -77,7 +77,7 @@ function trade(ledger, tf, sigs, tpPct, slPct){
       events.push({...closePos(ledger, cur, s.price, s.time, 'flip'), event:'close'});
     }
     const stake = r2(ledger.balance * STAKE_FRACTION);
-    if(stake < 10) continue; // cartera agotada: no se abre más
+    if(stake < 5) continue; // mínimo de orden tipo Binance; cartera agotada no abre más
     const dir = s.type==='BUY' ? 1 : -1;
     const pos = {
       id: `${tf}-${s.time}-${s.type}`, tf, type: s.type,
