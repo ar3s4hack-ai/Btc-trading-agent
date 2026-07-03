@@ -24,6 +24,16 @@ const TFS = ['1h', '4h'];
 const DATA = path.join(__dirname, '..', 'data');
 const OUT = path.join(DATA, 'signals.json');
 const TRADES = path.join(DATA, 'trades.json');
+const TRADES_B = path.join(DATA, 'trades-b.json');
+// Cartera B (experimento A/B): mismas entradas que la A, salidas distintas.
+// En 1h prueba TP/SL simétrico 2%/2% — en el backtest anual deja más margen
+// entre el acierto real y el umbral de equilibrio que el 1.2%/2% actual.
+// En 4h mantiene el perfil actual (ya era el mejor del grid). No alerta por
+// Telegram: compite en silencio y el dashboard compara las dos curvas.
+const PROFILE_B = {
+  '1h': {tp: 0.020, sl: 0.020},
+  '4h': {tp: core.TF['4h'].tp, sl: core.TF['4h'].sl},
+};
 
 async function fetchCandles(tf){
   const {binance, secs, count} = core.TF[tf];
@@ -67,6 +77,7 @@ async function main(){
   const model = loadJSON(path.join(DATA, 'model.json'));
   const prev = loadJSON(OUT);
   const ledger = loadJSON(TRADES) || paper.init();
+  const ledgerB = loadJSON(TRADES_B) || paper.init();
   const nowSec = Math.floor(Date.now()/1000);
   const lastPrice = {};
   const state = {generated_at:new Date().toISOString(), symbol:SYMBOL, tfs:{}};
@@ -120,6 +131,9 @@ async function main(){
     }
     // paper trading: cerrar por TP/SL con las velas nuevas y abrir con las señales frescas
     lastPrice[tf] = candles[candles.length-1].close;
+    // cartera B: mismas señales, salidas alternativas, sin alertas
+    paper.settle(ledgerB, tf, candles);
+    paper.trade(ledgerB, tf, fresh, PROFILE_B[tf].tp, PROFILE_B[tf].sl);
     const events = [
       ...paper.settle(ledger, tf, candles),
       ...paper.trade(ledger, tf, fresh, core.TF[tf].tp, core.TF[tf].sl),
@@ -139,10 +153,12 @@ async function main(){
   }
 
   const equity = paper.mark(ledger, lastPrice, nowSec);
+  const equityB = paper.mark(ledgerB, lastPrice, nowSec);
   fs.mkdirSync(DATA, {recursive:true});
   fs.writeFileSync(OUT, JSON.stringify(state, null, 1));
   fs.writeFileSync(TRADES, JSON.stringify(ledger, null, 1));
-  console.error(`signals.json actualizado · ${newAlerts.length} alertas nuevas · equity paper ${equity} USDT (${ledger.open.length} abiertas)`);
+  fs.writeFileSync(TRADES_B, JSON.stringify(ledgerB, null, 1));
+  console.error(`signals.json actualizado · ${newAlerts.length} alertas nuevas · paper A ${equity} / B ${equityB} USDT`);
   for(const msg of newAlerts) await telegram(msg + '\n\n<i>BTC Trading Agent · análisis educativo, no es asesoramiento financiero</i>');
 }
 
