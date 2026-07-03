@@ -10,6 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const core = require('../lib/agent-core.js');
+const paper = require('./paper.js');
 
 const HOSTS = ['https://data-api.binance.vision', 'https://api.binance.com'];
 const SYMBOL = 'BTCUSDT';
@@ -22,6 +23,7 @@ const MIN_PROB = 64;
 const TFS = ['1h', '4h'];
 const DATA = path.join(__dirname, '..', 'data');
 const OUT = path.join(DATA, 'signals.json');
+const TRADES = path.join(DATA, 'trades.json');
 
 async function fetchCandles(tf){
   const {binance, secs, count} = core.TF[tf];
@@ -64,6 +66,9 @@ const fmt$ = n => '$'+n.toLocaleString('es-ES',{maximumFractionDigits:0});
 async function main(){
   const model = loadJSON(path.join(DATA, 'model.json'));
   const prev = loadJSON(OUT);
+  const ledger = loadJSON(TRADES) || paper.init();
+  const nowSec = Math.floor(Date.now()/1000);
+  const lastPrice = {};
   const state = {generated_at:new Date().toISOString(), symbol:SYMBOL, tfs:{}};
   const newAlerts = [];
 
@@ -100,8 +105,11 @@ async function main(){
     const conviction = s => s.prob!=null
       ? s.prob>=MIN_PROB
       : (s.kind==='break' && s.strong);
+    const fresh = [];
     for(const s of recent){
       if(s.time <= prevLast || !conviction(s)) continue;
+      // solo se opera/alerta lo reciente: señales de las últimas 2 velas
+      if(s.time >= nowSec - 2*core.TF[tf].secs) fresh.push(s);
       const buy = s.type==='BUY';
       const head = s.kind==='break'
         ? `${buy?'🟢':'🔴'} <b>RUPTURA ${buy?'ALCISTA':'BAJISTA'}</b>${s.strong?' (vol. alto)':''}`
@@ -110,11 +118,31 @@ async function main(){
       const prob = s.prob!=null ? `\nProb. ML (TP antes que SL): <b>${s.prob}%</b>` : '';
       newAlerts.push(`${head} — BTC/USDT ${tf}\nPrecio: ${fmt$(s.price)}${zone}${prob}`);
     }
+    // paper trading: cerrar por TP/SL con las velas nuevas y abrir con las señales frescas
+    lastPrice[tf] = candles[candles.length-1].close;
+    const events = [
+      ...paper.settle(ledger, tf, candles),
+      ...paper.trade(ledger, tf, fresh, core.TF[tf].tp, core.TF[tf].sl),
+    ];
+    for(const ev of events){
+      const dirTxt = ev.type==='BUY' ? 'COMPRA' : 'VENTA';
+      if(ev.event==='open'){
+        newAlerts.push(`📜 <b>PAPER</b>: abierta ${dirTxt} ${tf} a ${fmt$(ev.entry)} (${ev.stake} USDT`+
+          (ev.prob!=null ? `, prob ${ev.prob}%` : '') + `)\nTP ${fmt$(ev.tp)} · SL ${fmt$(ev.sl)}`);
+      } else {
+        const sign = ev.pnl>=0 ? '+' : '';
+        const motivo = {tp:'take profit', sl:'stop loss', flip:'señal contraria'}[ev.reason] || ev.reason;
+        newAlerts.push(`📜 <b>PAPER</b>: cerrada ${dirTxt} ${tf} a ${fmt$(ev.exit)} por ${motivo}\n`+
+          `Resultado: <b>${sign}${ev.pnl} USDT</b> · balance ${ledger.balance.toLocaleString('es-ES')} USDT`);
+      }
+    }
   }
 
+  const equity = paper.mark(ledger, lastPrice, nowSec);
   fs.mkdirSync(DATA, {recursive:true});
   fs.writeFileSync(OUT, JSON.stringify(state, null, 1));
-  console.error(`signals.json actualizado · ${newAlerts.length} alertas nuevas`);
+  fs.writeFileSync(TRADES, JSON.stringify(ledger, null, 1));
+  console.error(`signals.json actualizado · ${newAlerts.length} alertas nuevas · equity paper ${equity} USDT (${ledger.open.length} abiertas)`);
   for(const msg of newAlerts) await telegram(msg + '\n\n<i>BTC Trading Agent · análisis educativo, no es asesoramiento financiero</i>');
 }
 

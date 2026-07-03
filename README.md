@@ -11,6 +11,7 @@ Dashboard de señales de Bitcoin con detección de **consolidaciones y rupturas*
 - **Dashboard web** (`index.html`): gráfico de velas BTC/USDT (1h y 4h) con [Lightweight Charts](https://github.com/tradingview/lightweight-charts), zonas de consolidación detectadas automáticamente, señales de compra/venta por cruces de EMA 9/21 y rupturas de rango, backtest en vivo con TP/SL fijos y la probabilidad estimada por el modelo ML para cada señal.
 - **Modelo ML** (`agent/train.py`): regresión logística estandarizada (con HistGradientBoosting como referencia de techo) entrenada sobre ~17.000 muestras etiquetadas de 1 año de velas de Binance. Cada muestra simula una entrada larga o corta y se etiqueta según si el take profit se alcanza antes que el stop loss. **Validación walk-forward honesta**: entrena con el primer 75 % del año y evalúa con el 25 % final, sin barajar. El modelo se exporta a `data/model.json` (pesos + escalado) y se evalúa igual en el navegador y en Node, sin dependencias.
 - **Agente autónomo** (`agent/run.js`): se ejecuta cada 30 minutos en GitHub Actions, descarga las velas recientes de Binance, recalcula señales, las puntúa con el modelo ML, publica `data/signals.json` (lo lee el dashboard) y envía las señales nuevas a **Telegram**.
+- **Paper trading** (`agent/paper.js`): el agente además **opera solo con una cartera simulada** de 10.000 USDT virtuales — abre posiciones con sus señales de convicción (10 % del balance por operación, comisión del 0,1 % por lado como en Binance), las cierra por take profit, stop loss o señal contraria, y publica el libro completo en `data/trades.json`. El dashboard muestra el balance, la curva de equity y el historial. **Sin dinero real**: es el banco de pruebas para medir si la estrategia sobrevive fuera del backtest.
 
 ### Filtro de calidad de señales
 
@@ -31,6 +32,8 @@ agent/
   fetch_data.py                 ← descarga 1 año de velas 1h/4h de Binance
   train.py                      ← entrena y exporta el modelo a data/model.json
   run.js                        ← análisis cada 30 min + alertas Telegram
+  paper.js                      ← cartera simulada: abre/cierra posiciones y
+                                   mantiene data/trades.json (sin dinero real)
 .github/workflows/
   train-model.yml               ← "Entrenar modelo ML (1 año Binance)" — manual
                                    y cada lunes de madrugada
