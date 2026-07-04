@@ -1,21 +1,24 @@
 {
- "generated_at": "2026-07-04T04:11:13.101Z",
+ "generated_at": "2026-07-04T07:22:25.843Z",
  "symbol": "BTCUSDT",
  "tfs": {
   "1h": {
-   "price": 62627.29,
+   "price": 62500.01,
    "candles": 719,
-   "state": "BUY",
-   "zone": null,
-   "winRate": 57.1,
+   "state": "range",
+   "zone": {
+    "top": 62979.86,
+    "bottom": 62328.24
+   },
+   "winRate": 58.5,
    "byKind": {
-    "break": {
-     "w": 15,
-     "l": 11
-    },
     "ema": {
      "w": 9,
      "l": 7
+    },
+    "break": {
+     "w": 15,
+     "l": 10
     }
    },
    "signals": [
