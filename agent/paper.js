@@ -8,6 +8,10 @@
 const START_BALANCE = 200;     // USDT virtuales (espejo de una cartera real pequeña)
 const STAKE_FRACTION = 0.10;   // fracción del balance por operación (~20 USDT)
 const FEE = 0.001;             // 0.1% por lado
+const SLIPPAGE = 0.0003;       // 0.03% por lado: en vivo se pierde parte del edge
+                               // del backtest (research/2026-07-04.md §3)
+const MAX_DRAWDOWN = 0.10;     // kill-switch: sin aperturas nuevas si la cartera
+                               // cae >10% desde su máximo histórico
 const MAX_EQUITY_POINTS = 3000; // ~2 meses de puntos cada 30 min
 const MAX_CLOSED = 200;         // historial de cerradas en el JSON
 
@@ -25,7 +29,7 @@ function grossPnl(pos, price){
   const ret = pos.type==='BUY' ? price/pos.entry - 1 : 1 - price/pos.entry;
   return pos.stake * ret;
 }
-function netPnl(pos, price){ return grossPnl(pos, price) - 2*FEE*pos.stake; }
+function netPnl(pos, price){ return grossPnl(pos, price) - 2*(FEE + SLIPPAGE)*pos.stake; }
 
 function closePos(ledger, pos, exit, exitTime, reason){
   const pnl = r2(netPnl(pos, exit));
@@ -70,6 +74,13 @@ function settle(ledger, tf, candles){
    y abre la nueva; señal en la misma dirección se ignora. */
 function trade(ledger, tf, sigs, tpPct, slPct){
   const events = [];
+  // kill-switch: en drawdown profundo se dejan de abrir posiciones (las
+  // abiertas se gestionan igual); se rearma solo si el equity se recupera
+  const lastEq = ledger.equity.length ? ledger.equity[ledger.equity.length-1].e : ledger.balance;
+  if(ledger.peak && lastEq < ledger.peak*(1-MAX_DRAWDOWN)){
+    if(sigs.length) console.error(`paper: kill-switch activo (equity ${lastEq} < ${Math.round(ledger.peak*(1-MAX_DRAWDOWN)*100)/100}), ${sigs.length} señal(es) sin operar`);
+    return events;
+  }
   for(const s of sigs){
     const cur = ledger.open.find(p => p.tf === tf);
     if(cur){
@@ -98,6 +109,7 @@ function mark(ledger, prices, nowSec){
   let eq = ledger.balance;
   for(const p of ledger.open) eq += p.stake + grossPnl(p, prices[p.tf] ?? p.entry);
   eq = r2(eq);
+  ledger.peak = r2(Math.max(ledger.peak || START_BALANCE, eq));
   ledger.equity.push({t: nowSec, e: eq});
   if(ledger.equity.length > MAX_EQUITY_POINTS)
     ledger.equity.splice(0, ledger.equity.length - MAX_EQUITY_POINTS);
@@ -106,4 +118,4 @@ function mark(ledger, prices, nowSec){
 }
 
 module.exports = {init, settle, trade, mark, grossPnl, netPnl,
-                  START_BALANCE, STAKE_FRACTION, FEE};
+                  START_BALANCE, STAKE_FRACTION, FEE, SLIPPAGE, MAX_DRAWDOWN};
