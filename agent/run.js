@@ -20,11 +20,18 @@ const SYMBOL = 'BTCUSDT';
 // hay modelo se alertan solo rupturas con volumen alto. El resto de señales
 // queda en el dashboard (signals.json) pero no genera mensaje de Telegram.
 const MIN_PROB = 64;
+// Ventana de frescura por timeframe (en velas): solo se opera lo reciente.
+// En 1h se amplía a 3 velas porque la cadencia real de GitHub Actions ronda
+// las 2h y con 2 velas se perderían entradas legítimas.
+const FRESH_CANDLES = {'1h': 3, '4h': 2};
 const TFS = ['1h', '4h'];
 const DATA = path.join(__dirname, '..', 'data');
 const OUT = path.join(DATA, 'signals.json');
 const TRADES = path.join(DATA, 'trades.json');
 const TRADES_B = path.join(DATA, 'trades-b.json');
+// Registro persistente de señales (operadas y descartadas) con su prob:
+// materia prima para recalibrar MIN_PROB con datos vivos. Cap 500 entradas.
+const SIGLOG = path.join(DATA, 'signals-log.json');
 // Cartera B (experimento A/B): mismas entradas que la A, salidas distintas.
 // En 1h prueba TP/SL simétrico 2%/2% — en el backtest anual deja más margen
 // entre el acierto real y el umbral de equilibrio que el 1.2%/2% actual.
@@ -78,6 +85,7 @@ async function main(){
   const prev = loadJSON(OUT);
   const ledger = loadJSON(TRADES) || paper.init();
   const ledgerB = loadJSON(TRADES_B) || paper.init();
+  const siglog = loadJSON(SIGLOG) || [];
   const nowSec = Math.floor(Date.now()/1000);
   const lastPrice = {};
   const state = {generated_at:new Date().toISOString(), symbol:SYMBOL, tfs:{}};
@@ -118,9 +126,12 @@ async function main(){
       : (s.kind==='break' && s.strong);
     const fresh = [];
     for(const s of recent){
-      if(s.time <= prevLast || !conviction(s)) continue;
-      // solo se opera/alerta lo reciente: señales de las últimas 2 velas
-      if(s.time >= nowSec - 2*core.TF[tf].secs) fresh.push(s);
+      if(s.time <= prevLast) continue;
+      siglog.push({tf, time:s.time, kind:s.kind, type:s.type, price:s.price,
+                   prob:s.prob, operada: conviction(s)});
+      if(!conviction(s)) continue;
+      // solo se opera/alerta lo reciente (ver FRESH_CANDLES)
+      if(s.time >= nowSec - FRESH_CANDLES[tf]*core.TF[tf].secs) fresh.push(s);
       const buy = s.type==='BUY';
       const head = s.kind==='break'
         ? `${buy?'🟢':'🔴'} <b>RUPTURA ${buy?'ALCISTA':'BAJISTA'}</b>${s.strong?' (vol. alto)':''}`
@@ -158,6 +169,8 @@ async function main(){
   fs.writeFileSync(OUT, JSON.stringify(state, null, 1));
   fs.writeFileSync(TRADES, JSON.stringify(ledger, null, 1));
   fs.writeFileSync(TRADES_B, JSON.stringify(ledgerB, null, 1));
+  siglog.splice(0, Math.max(0, siglog.length - 500));
+  fs.writeFileSync(SIGLOG, JSON.stringify(siglog, null, 1));
   console.error(`signals.json actualizado · ${newAlerts.length} alertas nuevas · paper A ${equity} / B ${equityB} USDT`);
   for(const msg of newAlerts) await telegram(msg + '\n\n<i>BTC Trading Agent · análisis educativo, no es asesoramiento financiero</i>');
 }
