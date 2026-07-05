@@ -147,10 +147,10 @@ async function main(){
     lastPrice[tf] = candles[candles.length-1].close;
     // cartera B: mismas señales, salidas alternativas, sin alertas
     paper.settle(ledgerB, tf, candles);
-    paper.trade(ledgerB, tf, fresh, PROFILE_B[tf].tp, PROFILE_B[tf].sl);
+    paper.trade(ledgerB, tf, fresh, PROFILE_B[tf].tp, PROFILE_B[tf].sl, lastPrice[tf]);
     const events = [
       ...paper.settle(ledger, tf, candles),
-      ...paper.trade(ledger, tf, fresh, core.TF[tf].tp, core.TF[tf].sl),
+      ...paper.trade(ledger, tf, fresh, core.TF[tf].tp, core.TF[tf].sl, lastPrice[tf]),
     ];
     for(const ev of events){
       const dirTxt = ev.type==='BUY' ? 'COMPRA' : 'VENTA';
