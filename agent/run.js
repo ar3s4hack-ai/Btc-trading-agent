@@ -11,6 +11,7 @@ const fs = require('fs');
 const path = require('path');
 const core = require('../lib/agent-core.js');
 const paper = require('./paper.js');
+const fundamental = require('./fundamental.js');
 
 const HOSTS = ['https://data-api.binance.vision', 'https://api.binance.com'];
 const SYMBOL = 'BTCUSDT';
@@ -32,6 +33,7 @@ const TRADES_B = path.join(DATA, 'trades-b.json');
 // Registro persistente de señales (operadas y descartadas) con su prob:
 // materia prima para recalibrar MIN_PROB con datos vivos. Cap 500 entradas.
 const SIGLOG = path.join(DATA, 'signals-log.json');
+const FUND = path.join(DATA, 'fundamental.json');
 // Cartera B (experimento A/B): mismas entradas que la A, salidas distintas.
 // En 1h prueba TP/SL simétrico 2%/2% — en el backtest anual deja más margen
 // entre el acierto real y el umbral de equilibrio que el 1.2%/2% actual.
@@ -86,6 +88,7 @@ async function main(){
   const ledger = loadJSON(TRADES) || paper.init();
   const ledgerB = loadJSON(TRADES_B) || paper.init();
   const siglog = loadJSON(SIGLOG) || [];
+  const siglogStart = siglog.length;
   const nowSec = Math.floor(Date.now()/1000);
   const lastPrice = {};
   const state = {generated_at:new Date().toISOString(), symbol:SYMBOL, tfs:{}};
@@ -163,16 +166,29 @@ async function main(){
     }
   }
 
+  // contexto fundamental (modo sombra): se publica, acompaña y se registra,
+  // pero no interviene en la decisión de operar
+  const fund = await fundamental.snapshot(lastPrice['1h'] || lastPrice['4h']);
+  for(let i = siglogStart; i < siglog.length; i++){
+    siglog[i].fund = fund.composite ? {
+      score: fund.composite.score,
+      fng: fund.fng && fund.fng.value,
+      premium: fund.premium && fund.premium.premiumPct,
+    } : null;
+  }
+
   const equity = paper.mark(ledger, lastPrice, nowSec);
   const equityB = paper.mark(ledgerB, lastPrice, nowSec);
   fs.mkdirSync(DATA, {recursive:true});
   fs.writeFileSync(OUT, JSON.stringify(state, null, 1));
   fs.writeFileSync(TRADES, JSON.stringify(ledger, null, 1));
   fs.writeFileSync(TRADES_B, JSON.stringify(ledgerB, null, 1));
+  fs.writeFileSync(FUND, JSON.stringify(fund, null, 1));
   siglog.splice(0, Math.max(0, siglog.length - 500));
   fs.writeFileSync(SIGLOG, JSON.stringify(siglog, null, 1));
-  console.error(`signals.json actualizado · ${newAlerts.length} alertas nuevas · paper A ${equity} / B ${equityB} USDT`);
-  for(const msg of newAlerts) await telegram(msg + '\n\n<i>BTC Trading Agent · análisis educativo, no es asesoramiento financiero</i>');
+  console.error(`signals.json actualizado · ${newAlerts.length} alertas nuevas · paper A ${equity} / B ${equityB} USDT · fundamental ${fund.composite ? fund.composite.label : 'n/d'}`);
+  const ctx = fundamental.resumen(fund);
+  for(const msg of newAlerts) await telegram(msg + ctx + '\n\n<i>BTC Trading Agent · análisis educativo, no es asesoramiento financiero</i>');
 }
 
 main().catch(e=>{ console.error(e); process.exit(1); });

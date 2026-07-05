@@ -10,6 +10,9 @@ Acumulado y priorizado por el ciclo diario de investigación. Regla: nada entra 
 | 4 | **Registrar señales descartadas** con su probabilidad (`data/signals-log.json`, cap 500) | Permite recalibrar el umbral 64 % con datos vivos en vez de backtest | Bajo | Mejor calibración continua del filtro | ✅ Hecho 2026-07-04 |
 | 5 | **Ampliar ventana de frescura a 3 velas en 1h** por la cadencia real (~2 h) de Actions | Cadencia medida el 2026-07-04: ~127 min entre pasadas | Trivial | Evita perder operaciones del experimento | ✅ Hecho 2026-07-04 |
 
+| 6 | **Contexto fundamental en modo sombra**: F&G, prima Coinbase y red Bitcoin publicados, alertados y registrados junto a cada señal | Fuentes públicas sin clave; lectura contraria del sentimiento y prima como proxy institucional | Bajo | Credibilidad + histórico para decidir con datos si merece ser feature del modelo | ✅ Hecho 2026-07-05 (sombra) |
+| 7 | **Promover el fundamental a feature del modelo** si el histórico de signals-log muestra correlación con el resultado de las señales | Pendiente de acumular ≥2-3 meses de registro | Medio (feature nueva + reentrenar + espejo JS/Python) | Según lo que digan los datos | Esperando histórico |
+
 ## Descartado (con motivo)
 
 - **Modelos transformer/deep learning**: mejoras marginales publicadas, coste alto, se pierde la evaluación en navegador y la interpretabilidad (informe 2026-07-04 §5).

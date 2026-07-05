@@ -11,6 +11,7 @@ Dashboard de señales de Bitcoin con detección de **consolidaciones y rupturas*
 - **Dashboard web** (`index.html`): gráfico de velas BTC/USDT (1h y 4h) con [Lightweight Charts](https://github.com/tradingview/lightweight-charts), zonas de consolidación detectadas automáticamente, señales de compra/venta por cruces de EMA 9/21 y rupturas de rango, backtest en vivo con TP/SL fijos y la probabilidad estimada por el modelo ML para cada señal.
 - **Modelo ML** (`agent/train.py`): regresión logística estandarizada (con HistGradientBoosting como referencia de techo) entrenada sobre ~17.000 muestras etiquetadas de 1 año de velas de Binance. Cada muestra simula una entrada larga o corta y se etiqueta según si el take profit se alcanza antes que el stop loss. **Validación walk-forward honesta**: entrena con el primer 75 % del año y evalúa con el 25 % final, sin barajar. El modelo se exporta a `data/model.json` (pesos + escalado) y se evalúa igual en el navegador y en Node, sin dependencias.
 - **Agente autónomo** (`agent/run.js`): se ejecuta cada 30 minutos en GitHub Actions, descarga las velas recientes de Binance, recalcula señales, las puntúa con el modelo ML, publica `data/signals.json` (lo lee el dashboard) y envía las señales nuevas a **Telegram**.
+- **Contexto fundamental en modo sombra** (`agent/fundamental.js`): en cada pasada el agente recoge el índice **Miedo/Codicia** (alternative.me), la **prima de Coinbase** frente a Binance (proxy de demanda institucional de EE. UU.) y la **salud de la red** (ajuste de dificultad y comisiones, mempool.space), compone una lectura -100..+100 con pesos documentados y la publica en `data/fundamental.json`. Se muestra en el dashboard, acompaña las alertas de Telegram y se registra junto a cada señal en `signals-log.json` — pero **no decide operaciones**: solo se promoverá a feature del modelo si el histórico demuestra que aporta valor predictivo.
 - **Paper trading A/B** (`agent/paper.js`): el agente además **opera solo con dos carteras simuladas** de 200 USD virtuales cada una — el tamaño de una cartera real pequeña — que compiten con las mismas señales de convicción (10 % del balance por operación; comisión del 0,1 % y slippage del 0,03 % por lado, como en la operativa real; kill-switch que pausa aperturas si la cartera cae más del 10 % desde máximos). La **cartera A** usa el perfil TP/SL de producción y la **cartera B** prueba salidas alternativas (TP/SL simétrico 2 %/2 % en 1h). Cierres por take profit, stop loss o señal contraria; libros en `data/trades.json` y `data/trades-b.json`. El dashboard compara las dos curvas de equity en vivo. **Sin dinero real**: es el banco de pruebas para medir qué perfil sobrevive fuera del backtest.
 
 ### Filtro de calidad de señales
@@ -35,6 +36,8 @@ agent/
   paper.js                      ← carteras simuladas: abre/cierra posiciones y
                                    mantiene data/trades*.json (sin dinero real)
   report.js                     ← resumen semanal A/B por Telegram (domingos)
+  fundamental.js                ← contexto fundamental en modo sombra
+                                   (F&G, prima Coinbase, red Bitcoin)
 .github/workflows/
   train-model.yml               ← "Entrenar modelo ML (1 año Binance)" — manual
                                    y cada lunes de madrugada

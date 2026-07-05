@@ -364,6 +364,20 @@ footer a:hover{color:var(--accent)}
     <div class="empty-msg" id="ptMsg">esperando la primera pasada del agente autónomo…</div>
   </div>
 
+  <!-- CONTEXTO FUNDAMENTAL -->
+  <div class="panel" style="margin-top:12px">
+    <div class="panel-head">
+      <span class="panel-title"><b>Contexto fundamental</b> · sentimiento, demanda institucional y salud de la red (informativo: no decide operaciones)</span>
+      <span class="panel-title" id="fnUpdated"></span>
+    </div>
+    <div class="strat" style="display:grid;grid-template-columns:1fr 1fr;gap:0 2rem">
+      <div class="strat-row"><span class="strat-k">Lectura compuesta</span><span class="strat-v" id="fnComposite">—</span></div>
+      <div class="strat-row"><span class="strat-k">Miedo / Codicia</span><span class="strat-v" id="fnFng">—</span></div>
+      <div class="strat-row"><span class="strat-k">Prima Coinbase</span><span class="strat-v" id="fnPremium">—</span></div>
+      <div class="strat-row"><span class="strat-k">Red Bitcoin</span><span class="strat-v" id="fnRed">—</span></div>
+    </div>
+  </div>
+
   <div class="disclaimer">
     <b>Aviso:</b> proyecto educativo de Raúl Morán Mateo. El agente opera con perfil de <b>alto win rate</b>
     (take profit ajustado, stop amplio), por lo que el % de aciertos mostrado se calcula con
@@ -803,6 +817,30 @@ async function loadPaper(){
   if(a) renderPaper(a, b);
 }
 
+/* ── contexto fundamental (data/fundamental.json, modo sombra) ── */
+async function loadFund(){
+  try{
+    const res = await fetch('data/fundamental.json?t='+Date.now());
+    if(!res.ok) return;
+    const f = await res.json();
+    if(f.composite){
+      const iconos = {alcista:'🟢', neutral:'⚪', bajista:'🔴'};
+      $('fnComposite').textContent = `${iconos[f.composite.label]} ${f.composite.label} (${f.composite.score>=0?'+':''}${f.composite.score})`;
+      $('fnComposite').style.color = f.composite.label==='alcista' ? 'var(--accent)'
+        : (f.composite.label==='bajista' ? 'var(--sell)' : '');
+    }
+    if(f.fng) $('fnFng').textContent = `${f.fng.value}/100 · ${f.fng.label}` +
+      (f.fng.prev!=null ? ` (ayer ${f.fng.prev})` : '');
+    if(f.premium) $('fnPremium').textContent =
+      `${f.premium.premiumPct>=0?'+':''}${f.premium.premiumPct}% ` +
+      (f.premium.premiumPct>=0.05 ? '· demanda EE.UU.' : (f.premium.premiumPct<=-0.05 ? '· descuento' : '· equilibrio'));
+    if(f.red) $('fnRed').textContent =
+      `dificultad ${f.red.difficultyChangePct>=0?'+':''}${f.red.difficultyChangePct}% · fee rápida ${f.red.fastestFee} sat/vB`;
+    if(f.generated_at) $('fnUpdated').textContent =
+      '🤖 ' + new Date(f.generated_at).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  }catch(e){}
+}
+
 async function loadML(){
   try{
     const res = await fetch('data/model.json?t='+Date.now());
@@ -889,9 +927,11 @@ if(typeof LightweightCharts==='undefined' || typeof AgentCore==='undefined'){
 buildChart();
 reload().then(loadML);
 loadPaper();
+loadFund();
 pollTimer = setInterval(poll, POLL_MS);
 setInterval(loadML, 5*60*1000); // el agente autónomo actualiza data/ cada 30 min
 setInterval(loadPaper, 5*60*1000);
+setInterval(loadFund, 5*60*1000);
 
 })();
 </script>
