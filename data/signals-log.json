@@ -1,1 +1,30 @@
-[]
+[
+ {
+  "tf": "1h",
+  "time": 1783285200,
+  "kind": "break",
+  "type": "BUY",
+  "price": 63092.01,
+  "prob": 63,
+  "operada": false,
+  "fund": {
+   "score": 59,
+   "fng": 23,
+   "premium": 0.94
+  }
+ },
+ {
+  "tf": "1h",
+  "time": 1783285200,
+  "kind": "ema",
+  "type": "BUY",
+  "price": 63092.01,
+  "prob": 63,
+  "operada": false,
+  "fund": {
+   "score": 59,
+   "fng": 23,
+   "premium": 0.94
+  }
+ }
+]
