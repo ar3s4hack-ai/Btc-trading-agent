@@ -70,9 +70,11 @@ function settle(ledger, tf, candles){
 }
 
 /* Abre posiciones con las señales de convicción nuevas. Una posición por
-   timeframe: señal contraria cierra la actual al precio de la señal (flip)
-   y abre la nueva; señal en la misma dirección se ignora. */
-function trade(ledger, tf, sigs, tpPct, slPct){
+   timeframe: señal contraria cierra la actual (flip) y abre la nueva; señal
+   en la misma dirección se ignora. execPrice es el precio del momento de la
+   pasada: en real solo puedes operar al precio de ahora, no al del cierre de
+   la vela de la señal — se guarda signal_price aparte para auditoría. */
+function trade(ledger, tf, sigs, tpPct, slPct, execPrice){
   const events = [];
   // kill-switch: en drawdown profundo se dejan de abrir posiciones (las
   // abiertas se gestionan igual); se rearma solo si el equity se recupera
@@ -82,19 +84,20 @@ function trade(ledger, tf, sigs, tpPct, slPct){
     return events;
   }
   for(const s of sigs){
+    const px = execPrice ?? s.price;
     const cur = ledger.open.find(p => p.tf === tf);
     if(cur){
       if(cur.type === s.type) continue;
-      events.push({...closePos(ledger, cur, s.price, s.time, 'flip'), event:'close'});
+      events.push({...closePos(ledger, cur, px, s.time, 'flip'), event:'close'});
     }
     const stake = r2(ledger.balance * STAKE_FRACTION);
     if(stake < 5) continue; // mínimo de orden tipo Binance; cartera agotada no abre más
     const dir = s.type==='BUY' ? 1 : -1;
     const pos = {
       id: `${tf}-${s.time}-${s.type}`, tf, type: s.type,
-      time: s.time, entry: s.price, stake,
-      tp: r2(s.price * (1 + dir*tpPct)),
-      sl: r2(s.price * (1 - dir*slPct)),
+      time: s.time, entry: px, signal_price: s.price, stake,
+      tp: r2(px * (1 + dir*tpPct)),
+      sl: r2(px * (1 - dir*slPct)),
       kind: s.kind, prob: s.prob ?? null,
     };
     ledger.balance = r2(ledger.balance - stake);
