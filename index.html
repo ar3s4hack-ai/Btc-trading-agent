@@ -98,14 +98,14 @@ header.page{padding:2.5rem 0 1.5rem}
 /* controls */
 .controls{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:12px}
 .tf-group{display:flex;gap:6px}
-.tf-btn{
+.tf-btn,.src-btn{
   font-family:var(--mono);font-size:12px;
   padding:7px 14px;background:var(--bg1);
   border:1px solid var(--border);color:var(--gray);
   cursor:pointer;transition:all .2s;
 }
-.tf-btn:hover{color:var(--white);border-color:var(--border2)}
-.tf-btn.active{background:var(--accent-dim);border-color:var(--border2);color:var(--accent)}
+.tf-btn:hover,.src-btn:hover{color:var(--white);border-color:var(--border2)}
+.tf-btn.active,.src-btn.active{background:var(--accent-dim);border-color:var(--border2);color:var(--accent)}
 .ctrl-right{display:flex;gap:8px;align-items:center}
 .btn-notif{
   display:inline-flex;align-items:center;gap:7px;
@@ -268,6 +268,10 @@ footer a:hover{color:var(--accent)}
       <button class="tf-btn" data-tf="4h">4h</button>
       <button class="tf-btn" data-tf="1d">1D</button>
     </div>
+    <div class="tf-group" role="tablist" aria-label="Fuente de precio">
+      <button class="src-btn active" data-src="binance" title="El par que opera el agente">Binance USDT</button>
+      <button class="src-btn" data-src="coinbase" title="El precio que muestra TradingView BTCUSD">Coinbase USD</button>
+    </div>
     <div class="ctrl-right">
       <button class="btn-notif" id="notifBtn">🔔 Activar notificaciones</button>
     </div>
@@ -276,7 +280,7 @@ footer a:hover{color:var(--accent)}
   <!-- CHART -->
   <div class="panel">
     <div class="panel-head">
-      <span class="panel-title"><b>BTC/USDT</b> · velas <span id="tfTitle">1h</span> · <span id="srcLabel">Binance</span></span>
+      <span class="panel-title"><b id="pairTitle">BTC/USDT</b> · velas <span id="tfTitle">1h</span> · <span id="srcLabel">Binance</span> · <span id="cmpLabel" style="color:var(--gray)"></span></span>
       <div class="legend">
         <span><span class="lk" style="background:#e8b93c"></span>EMA 9</span>
         <span><span class="lk" style="background:#5aa7e8"></span>EMA 21</span>
@@ -418,6 +422,9 @@ let demoMode = false;
 let dataSource = 'binance'; // 'binance' | 'coinbase' | 'demo'
 let ws = null, demoTicker = null;
 let lastAlertKey = localStorage.getItem('btcagent-lastAlert') || '';
+// fuente preferida por el usuario: binance (par del agente) o coinbase
+// (el precio que muestra TradingView BTCUSD). Persiste entre visitas.
+let priceSource = localStorage.getItem('btcagent-source') || 'binance';
 
 const $ = id => document.getElementById(id);
 const fmt = (n, d=2) => n==null ? '—' : n.toLocaleString('es-ES',{minimumFractionDigits:d, maximumFractionDigits:d});
@@ -482,9 +489,33 @@ function demoData(tfKey){
   return out;
 }
 async function loadCandles(tfKey){
-  try{ const c=await fetchBinance(tfKey);  demoMode=false; dataSource='binance';  return c; }catch(e){}
-  try{ const c=await fetchCoinbase(tfKey); demoMode=false; dataSource='coinbase'; return c; }catch(e){}
+  const orden = priceSource==='coinbase'
+    ? [['coinbase', fetchCoinbase], ['binance', fetchBinance]]
+    : [['binance', fetchBinance], ['coinbase', fetchCoinbase]];
+  for(const [src, fn] of orden){
+    try{ const c=await fn(tfKey); demoMode=false; dataSource=src; return c; }catch(e){}
+  }
   demoMode=true; dataSource='demo'; return demoData(tfKey);
+}
+
+/* precio del "otro" mercado, para que la diferencia con TradingView
+   sea visible en vez de parecer un error */
+async function loadCompare(){
+  if(demoMode || !candles.length){ $('cmpLabel').textContent=''; return; }
+  try{
+    let otro=null, nombre='';
+    if(dataSource==='coinbase'){
+      const r = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${SYMBOL}`);
+      if(r.ok){ otro = +(await r.json()).price; nombre='Binance USDT'; }
+    } else {
+      const r = await fetch('https://api.exchange.coinbase.com/products/BTC-USD/ticker');
+      if(r.ok){ otro = +(await r.json()).price; nombre='Coinbase USD'; }
+    }
+    if(!otro) return;
+    const aqui = candles[candles.length-1].close;
+    const d = (otro/aqui-1)*100;
+    $('cmpLabel').textContent = `${nombre}: $${fmt(otro,0)} (${d>=0?'+':''}${fmt(d,2)}%)`;
+  }catch(e){}
 }
 async function fetchLatest(tfKey){
   if(dataSource==='binance'){
@@ -878,9 +909,11 @@ async function reload(){
   const badge = $('liveBadge');
   badge.textContent = demoMode ? 'MODO DEMO' : 'EN VIVO';
   badge.classList.toggle('off', demoMode);
-  $('srcLabel').textContent = {binance:'Binance', coinbase:'Coinbase', demo:'demo'}[dataSource];
+  $('srcLabel').textContent = {binance:'Binance', coinbase:'Coinbase (≈TradingView)', demo:'demo'}[dataSource];
+  $('pairTitle').textContent = dataSource==='coinbase' ? 'BTC/USD' : 'BTC/USDT';
   recompute();
   startTicker();
+  loadCompare();
 }
 
 async function poll(){
@@ -909,6 +942,17 @@ document.querySelectorAll('.tf-btn').forEach(btn=>{
   });
 });
 
+document.querySelectorAll('.src-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    if(btn.dataset.src === priceSource) return;
+    document.querySelectorAll('.src-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    priceSource = btn.dataset.src;
+    localStorage.setItem('btcagent-source', priceSource);
+    reload();
+  });
+});
+
 $('notifBtn').addEventListener('click', async ()=>{
   if(!('Notification' in window)) return alert('Tu navegador no soporta notificaciones');
   const p = await Notification.requestPermission();
@@ -925,6 +969,7 @@ if(typeof LightweightCharts==='undefined' || typeof AgentCore==='undefined'){
   return;
 }
 buildChart();
+document.querySelectorAll('.src-btn').forEach(b=>b.classList.toggle('active', b.dataset.src===priceSource));
 reload().then(loadML);
 loadPaper();
 loadFund();
@@ -932,6 +977,7 @@ pollTimer = setInterval(poll, POLL_MS);
 setInterval(loadML, 5*60*1000); // el agente autónomo actualiza data/ cada 30 min
 setInterval(loadPaper, 5*60*1000);
 setInterval(loadFund, 5*60*1000);
+setInterval(loadCompare, 30*1000);
 
 })();
 </script>
