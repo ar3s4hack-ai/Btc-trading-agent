@@ -44,3 +44,9 @@ jobs:
       - name: Desplegar
         id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Reintentar (Pages falla transitoriamente a veces)
+        id: deployment-retry
+        if: steps.deployment.outcome == 'failure'
+        uses: actions/deploy-pages@v4
