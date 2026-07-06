@@ -12,6 +12,8 @@ Acumulado y priorizado por el ciclo diario de investigación. Regla: nada entra 
 
 | 6 | **Contexto fundamental en modo sombra**: F&G, prima Coinbase y red Bitcoin publicados, alertados y registrados junto a cada señal | Fuentes públicas sin clave; lectura contraria del sentimiento y prima como proxy institucional | Bajo | Credibilidad + histórico para decidir con datos si merece ser feature del modelo | ✅ Hecho 2026-07-05 (sombra) |
 | 7 | **Promover el fundamental a feature del modelo** si el histórico de signals-log muestra correlación con el resultado de las señales | Pendiente de acumular ≥2-3 meses de registro | Medio (feature nueva + reentrenar + espejo JS/Python) | Según lo que digan los datos | Esperando histórico |
+| 8 | **Filtro de régimen explícito**: pausar cruces EMA cuando no hay tendencia (ADX bajo / canal estrecho) y en volatilidad extrema | Causa nº 1 de muerte de bots: estrategia de tendencia en mercado sin tendencia (informe 2026-07-06) | Medio (indicador + backtest + espejo) | Menos operaciones perdedoras en lateral | Propuesta (evaluar con la cartera C) |
+| 9 | **Aviso Telegram al publicarse un informe de investigación** | Los informes no sirven si nadie los ve | Bajo (workflow con filtro de rutas) | Visibilidad del ciclo de investigación | ✅ Hecho 2026-07-06 |
 
 ## Descartado (con motivo)
 
