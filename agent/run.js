@@ -43,6 +43,15 @@ const PROFILE_B = {
   '1h': {tp: 0.020, sl: 0.020},
   '4h': {tp: core.TF['4h'].tp, sl: core.TF['4h'].sl},
 };
+// Cartera C ("rupturas con recorrido"): deja correr al ganador con TP largo
+// y SL corto. Backtest anual con costes: 1h solo rupturas 3%/1.5% -> +1.43
+// USD (47% win vs 39% de equilibrio); 4h todas las señales 4%/2% -> +1.74.
+// Gana pocas veces pero grande: rachas de pérdidas más largas son normales.
+const TRADES_C = path.join(DATA, 'trades-c.json');
+const PROFILE_C = {
+  '1h': {tp: 0.030, sl: 0.015, solo: 'break'},
+  '4h': {tp: 0.040, sl: 0.020},
+};
 
 async function fetchCandles(tf){
   const {binance, secs, count} = core.TF[tf];
@@ -87,6 +96,7 @@ async function main(){
   const prev = loadJSON(OUT);
   const ledger = loadJSON(TRADES) || paper.init();
   const ledgerB = loadJSON(TRADES_B) || paper.init();
+  const ledgerC = loadJSON(TRADES_C) || paper.init();
   const siglog = loadJSON(SIGLOG) || [];
   const siglogStart = siglog.length;
   const nowSec = Math.floor(Date.now()/1000);
@@ -153,9 +163,12 @@ async function main(){
     }
     // paper trading: cerrar por TP/SL con las velas nuevas y abrir con las señales frescas
     lastPrice[tf] = candles[candles.length-1].close;
-    // cartera B: mismas señales, salidas alternativas, sin alertas
+    // carteras B y C: mismas señales, salidas alternativas, sin alertas
     paper.settle(ledgerB, tf, candles);
     paper.trade(ledgerB, tf, fresh, PROFILE_B[tf].tp, PROFILE_B[tf].sl, lastPrice[tf]);
+    paper.settle(ledgerC, tf, candles);
+    const freshC = PROFILE_C[tf].solo ? fresh.filter(s => s.kind === PROFILE_C[tf].solo) : fresh;
+    paper.trade(ledgerC, tf, freshC, PROFILE_C[tf].tp, PROFILE_C[tf].sl, lastPrice[tf]);
     const events = [
       ...paper.settle(ledger, tf, candles),
       ...paper.trade(ledger, tf, fresh, core.TF[tf].tp, core.TF[tf].sl, lastPrice[tf]),
@@ -187,14 +200,16 @@ async function main(){
 
   const equity = paper.mark(ledger, lastPrice, nowSec);
   const equityB = paper.mark(ledgerB, lastPrice, nowSec);
+  const equityC = paper.mark(ledgerC, lastPrice, nowSec);
   fs.mkdirSync(DATA, {recursive:true});
   fs.writeFileSync(OUT, JSON.stringify(state, null, 1));
   fs.writeFileSync(TRADES, JSON.stringify(ledger, null, 1));
   fs.writeFileSync(TRADES_B, JSON.stringify(ledgerB, null, 1));
+  fs.writeFileSync(TRADES_C, JSON.stringify(ledgerC, null, 1));
   fs.writeFileSync(FUND, JSON.stringify(fund, null, 1));
   siglog.splice(0, Math.max(0, siglog.length - 500));
   fs.writeFileSync(SIGLOG, JSON.stringify(siglog, null, 1));
-  console.error(`signals.json actualizado · ${newAlerts.length} alertas nuevas · paper A ${equity} / B ${equityB} USDT · fundamental ${fund.composite ? fund.composite.label : 'n/d'}`);
+  console.error(`signals.json actualizado · ${newAlerts.length} alertas nuevas · paper A ${equity} / B ${equityB} / C ${equityC} USDT · fundamental ${fund.composite ? fund.composite.label : 'n/d'}`);
   const ctx = fundamental.resumen(fund);
   for(const msg of newAlerts) await telegram(msg + ctx + '\n\n<i>BTC Trading Agent · análisis educativo, no es asesoramiento financiero</i>');
 }
