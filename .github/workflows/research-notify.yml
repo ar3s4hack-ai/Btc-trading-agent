@@ -1,0 +1,36 @@
+name: Aviso de informe de investigación (Telegram)
+
+on:
+  push:
+    branches: [main]
+    paths: ['research/**']
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Avisar por Telegram del informe nuevo
+        env:
+          TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$CHAT" ]; then
+            echo "secrets de Telegram no configurados; aviso omitido"; exit 0
+          fi
+          CAMBIOS=$(git diff --name-only HEAD^ HEAD -- research/ || true)
+          [ -z "$CAMBIOS" ] && exit 0
+          INFORME=$(echo "$CAMBIOS" | grep -E 'research/20[0-9-]+\.md' | tail -1 || true)
+          LINK="https://github.com/${REPO}/tree/main/research"
+          [ -n "$INFORME" ] && LINK="https://github.com/${REPO}/blob/main/${INFORME}"
+          TEXTO=$(printf '🔎 Investigación actualizada en el BTC Trading Agent:\n%s\n\nLéelo aquí: %s' "$CAMBIOS" "$LINK")
+          curl -sf "https://api.telegram.org/bot${TOKEN}/sendMessage" \
+            -d chat_id="${CHAT}" --data-urlencode text="${TEXTO}" >/dev/null \
+            && echo "aviso enviado" || echo "fallo al enviar (no bloquea)"
