@@ -132,7 +132,15 @@ async function main(){
       if(s.time <= prevLast) continue;
       siglog.push({tf, time:s.time, kind:s.kind, type:s.type, price:s.price,
                    prob:s.prob, operada: conviction(s)});
-      if(!conviction(s)) continue;
+      if(!conviction(s)){
+        // aviso informativo si roza el listón (62-64): visibilidad de que el
+        // agente examina y descarta, sin abrir posiciones (backtest: por
+        // debajo de 64 las señales pierden dinero con nuestros perfiles)
+        if(s.prob!=null && s.prob>=62 && s.time >= nowSec - FRESH_CANDLES[tf]*core.TF[tf].secs){
+          newAlerts.push(`🔕 Señal descartada — BTC/USDT ${tf}: ${s.kind==='break'?'ruptura':'cruce'} ${s.type==='BUY'?'alcista':'bajista'} a ${fmt$(s.price)} con nota <b>${s.prob}%</b> (listón 64%). Sin operación.`);
+        }
+        continue;
+      }
       // solo se opera/alerta lo reciente (ver FRESH_CANDLES)
       if(s.time >= nowSec - FRESH_CANDLES[tf]*core.TF[tf].secs) fresh.push(s);
       const buy = s.type==='BUY';
