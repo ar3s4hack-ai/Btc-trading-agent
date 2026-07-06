@@ -5,8 +5,10 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: '9,39 * * * *'       # justo después de cada pasada del agente (:00/:30)
-  workflow_run:                  # y también al acabar análisis/reentrenamiento
+    - cron: '19 */2 * * *'       # red de seguridad cada 2h: Pages limita los
+                                 # despliegues por hora y el workflow_run ya
+                                 # republica tras cada pasada del agente
+  workflow_run:                  # al acabar análisis/reentrenamiento
     workflows:
       - "Agente autónomo (análisis + alertas)"
       - "Entrenar modelo ML (1 año Binance)"
