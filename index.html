@@ -348,20 +348,23 @@ footer a:hover{color:var(--accent)}
   <!-- PAPER TRADING -->
   <div class="panel" style="margin-top:12px">
     <div class="panel-head">
-      <span class="panel-title"><b>Paper trading A/B</b> · dos carteras simuladas compiten con las mismas señales (200 USD virtuales cada una, como una cartera real pequeña)</span>
+      <span class="panel-title"><b>Paper trading A/B/C</b> · tres carteras simuladas compiten con las mismas señales (200 USD virtuales cada una, como una cartera real pequeña)</span>
       <span class="panel-title" id="ptUpdated"></span>
     </div>
     <div class="strat" style="display:grid;grid-template-columns:1fr 1fr;gap:0 2rem">
       <div class="strat-row"><span class="strat-k">Cartera A · TP/SL actual</span><span class="strat-v" id="ptEqA">—</span></div>
-      <div class="strat-row"><span class="strat-k">Cartera B · TP/SL 2%/2% en 1h</span><span class="strat-v" id="ptEqB">—</span></div>
       <div class="strat-row"><span class="strat-k">Operaciones A</span><span class="strat-v" id="ptOpsA">—</span></div>
+      <div class="strat-row"><span class="strat-k">Cartera B · TP/SL 2%/2% en 1h</span><span class="strat-v" id="ptEqB">—</span></div>
       <div class="strat-row"><span class="strat-k">Operaciones B</span><span class="strat-v" id="ptOpsB">—</span></div>
+      <div class="strat-row"><span class="strat-k">Cartera C · rupturas TP largo</span><span class="strat-v" id="ptEqC">—</span></div>
+      <div class="strat-row"><span class="strat-k">Operaciones C</span><span class="strat-v" id="ptOpsC">—</span></div>
       <div class="strat-row"><span class="strat-k">Posiciones abiertas</span><span class="strat-v" id="ptOpen">—</span></div>
       <div class="strat-row"><span class="strat-k">Tamaño por operación</span><span class="strat-v">10% del balance · 0,1% comisión + 0,03% slippage/lado · pausa si DD &gt;10%</span></div>
     </div>
     <div class="legend" style="margin-top:10px">
       <span><span class="lk" style="background:#c8f135"></span>cartera A</span>
       <span><span class="lk" style="background:#5aa7e8"></span>cartera B</span>
+      <span><span class="lk" style="background:#e8b93c"></span>cartera C</span>
       <span><span class="lk" style="background:transparent;border-top:1px dashed var(--gray);height:0"></span>balance inicial</span>
     </div>
     <div id="ptChart" style="height:130px;margin-top:6px"></div>
@@ -789,8 +792,8 @@ function updateML(){
   $('mlProb').style.color = p!=null && p>=55 ? 'var(--accent)' : '';
 }
 /* ── paper trading A/B: carteras simuladas del agente (data/trades*.json) ── */
-let ptChart = null, ptSeriesA = null, ptSeriesB = null;
-function renderPaper(a, b){
+let ptChart = null, ptSeriesA = null, ptSeriesB = null, ptSeriesC = null;
+function renderPaper(a, b, c){
   const money = n => n.toLocaleString('es-ES',{maximumFractionDigits:2}) + ' USDT';
   const sign = n => (n>=0?'+':'') + n.toLocaleString('es-ES',{maximumFractionDigits:2});
   const eqOf = l => l.equity.length ? l.equity[l.equity.length-1].e : l.start_balance;
@@ -809,7 +812,8 @@ function renderPaper(a, b){
     ? l.open.map(p=>`${p.type==='BUY'?'▲':'▼'} ${p.tf} @ $${fmt(p.entry,0)}`).join(', ') : 'ninguna';
   setEq('ptEqA', a); setOps('ptOpsA', a);
   if(b){ setEq('ptEqB', b); setOps('ptOpsB', b); }
-  $('ptOpen').textContent = `A: ${openTxt(a)} · B: ${b ? openTxt(b) : '—'}`;
+  if(c){ setEq('ptEqC', c); setOps('ptOpsC', c); }
+  $('ptOpen').textContent = `A: ${openTxt(a)} · B: ${b ? openTxt(b) : '—'} · C: ${c ? openTxt(c) : '—'}`;
   $('ptUpdated').textContent = a.updated_at
     ? '🤖 ' + new Date(a.updated_at).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
   if(a.equity.length < 2){ $('ptMsg').textContent = 'la curva de equity aparecerá con más pasadas del agente'; return; }
@@ -832,11 +836,14 @@ function renderPaper(a, b){
       priceLineVisible:false, crosshairMarkerVisible:true, title:'A'});
     ptSeriesB = ptChart.addLineSeries({color:'#5aa7e8', lineWidth:2,
       priceLineVisible:false, crosshairMarkerVisible:true, title:'B'});
+    ptSeriesC = ptChart.addLineSeries({color:'#e8b93c', lineWidth:2,
+      priceLineVisible:false, crosshairMarkerVisible:true, title:'C'});
     ptSeriesA.createPriceLine({price:a.start_balance, color:'rgba(107,122,110,0.5)',
       lineWidth:1, lineStyle:2, axisLabelVisible:false});
   }
   ptSeriesA.setData(a.equity.map(p=>({time:p.t, value:p.e})));
   if(b) ptSeriesB.setData(b.equity.map(p=>({time:p.t, value:p.e})));
+  if(c) ptSeriesC.setData(c.equity.map(p=>({time:p.t, value:p.e})));
   ptChart.timeScale().fitContent();
 }
 async function loadPaper(){
@@ -844,8 +851,8 @@ async function loadPaper(){
     try{ const r = await fetch(f+'?t='+Date.now()); return r.ok ? await r.json() : null; }
     catch(e){ return null; }
   };
-  const [a, b] = await Promise.all([get('data/trades.json'), get('data/trades-b.json')]);
-  if(a) renderPaper(a, b);
+  const [a, b, c] = await Promise.all([get('data/trades.json'), get('data/trades-b.json'), get('data/trades-c.json')]);
+  if(a) renderPaper(a, b, c);
 }
 
 /* ── contexto fundamental (data/fundamental.json, modo sombra) ── */

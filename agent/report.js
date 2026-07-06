@@ -39,21 +39,24 @@ function resumen(nombre, led, semanaDesde){
 
 async function main(){
   const a = load('trades.json');
-  const b = load('trades-b.json');
   if(!a){ console.error('sin data/trades.json: aún no hay nada que resumir'); return; }
   const semanaDesde = Math.floor(Date.now()/1000) - 7*86400;
-  const ra = resumen('Cartera A · TP/SL actual', a, semanaDesde);
-  const rb = b ? resumen('Cartera B · 2%/2% en 1h', b, semanaDesde) : null;
+  const carteras = [
+    ['A', '🟢', resumen('Cartera A · TP/SL actual', a, semanaDesde)],
+    ['B', '🔵', load('trades-b.json') && resumen('Cartera B · 2%/2% en 1h', load('trades-b.json'), semanaDesde)],
+    ['C', '🟡', load('trades-c.json') && resumen('Cartera C · rupturas TP largo', load('trades-c.json'), semanaDesde)],
+  ].filter(x => x[2]);
 
   let veredicto = '';
-  if(rb){
-    const d = Math.round((rb.eq - ra.eq)*100)/100;
+  if(carteras.length > 1){
+    const orden = [...carteras].sort((x, y) => y[2].eq - x[2].eq);
+    const d = Math.round((orden[0][2].eq - orden[1][2].eq)*100)/100;
     veredicto = d === 0 ? '\n\n🤝 Empate técnico esta semana.'
-      : `\n\n${d > 0 ? '🔵 La <b>B</b>' : '🟢 La <b>A</b>'} va por delante por ${fmt(Math.abs(d))} USDT.`;
+      : `\n\n${orden[0][1]} La <b>${orden[0][0]}</b> va en cabeza, ${fmt(d)} USDT sobre la siguiente.`;
   }
 
-  const msg = `📊 <b>Resumen semanal · Paper trading A/B</b>\n\n${ra.linea}` +
-    (rb ? `\n\n${rb.linea}` : '') + veredicto +
+  const msg = `📊 <b>Resumen semanal · Paper trading</b>\n\n` +
+    carteras.map(x => x[2].linea).join('\n\n') + veredicto +
     '\n\n<i>BTC Trading Agent · dinero ficticio, no es asesoramiento financiero</i>';
   console.error(msg.replace(/<[^>]+>/g, ''));
   await telegram(msg);
