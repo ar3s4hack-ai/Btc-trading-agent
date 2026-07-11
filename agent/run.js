@@ -22,9 +22,12 @@ const SYMBOL = 'BTCUSDT';
 // queda en el dashboard (signals.json) pero no genera mensaje de Telegram.
 const MIN_PROB = 64;
 // Ventana de frescura por timeframe (en velas): solo se opera lo reciente.
-// En 1h se amplía a 3 velas porque la cadencia real de GitHub Actions ronda
-// las 2h y con 2 velas se perderían entradas legítimas.
-const FRESH_CANDLES = {'1h': 3, '4h': 2};
+// Dimensionada con datos: el hueco máximo medido entre pasadas de Actions
+// fue de 285 min (el 09/07 una señal válida del 65.3% se perdió con la
+// ventana de 3 velas). 5 velas en 1h cubre el peor hueco observado; la
+// entrada tardía se paga al precio de ejecución real, así que el coste del
+// retraso queda medido en signal_price vs entry.
+const FRESH_CANDLES = {'1h': 5, '4h': 2};
 const TFS = ['1h', '4h'];
 const DATA = path.join(__dirname, '..', 'data');
 const OUT = path.join(DATA, 'signals.json');
@@ -140,19 +143,26 @@ async function main(){
     const fresh = [];
     for(const s of recent){
       if(s.time <= prevLast) continue;
+      const esFresca = s.time >= nowSec - FRESH_CANDLES[tf]*core.TF[tf].secs;
+      // conviction = aprobó el examen ML; operada = además llegó a tiempo
       siglog.push({tf, time:s.time, kind:s.kind, type:s.type, price:s.price,
-                   prob:s.prob, operada: conviction(s)});
+                   prob:s.prob, conviction: conviction(s), operada: conviction(s) && esFresca});
       if(!conviction(s)){
         // aviso informativo si roza el listón (62-64): visibilidad de que el
         // agente examina y descarta, sin abrir posiciones (backtest: por
         // debajo de 64 las señales pierden dinero con nuestros perfiles)
-        if(s.prob!=null && s.prob>=62 && s.time >= nowSec - FRESH_CANDLES[tf]*core.TF[tf].secs){
+        if(s.prob!=null && s.prob>=62 && esFresca){
           newAlerts.push(`🔕 Señal descartada — BTC/USDT ${tf}: ${s.kind==='break'?'ruptura':'cruce'} ${s.type==='BUY'?'alcista':'bajista'} a ${fmt$(s.price)} con nota <b>${s.prob}%</b> (listón 64%). Sin operación.`);
         }
         continue;
       }
-      // solo se opera/alerta lo reciente (ver FRESH_CANDLES)
-      if(s.time >= nowSec - FRESH_CANDLES[tf]*core.TF[tf].secs) fresh.push(s);
+      if(!esFresca){
+        // señal válida que llegó tarde por la cadencia de Actions: visible
+        // en Telegram para que ninguna pérdida de oportunidad sea silenciosa
+        newAlerts.push(`⏰ Señal válida perdida por cadencia — BTC/USDT ${tf}: ${s.kind==='break'?'ruptura':'cruce'} ${s.type==='BUY'?'alcista':'bajista'} con nota <b>${s.prob}%</b> nació hace ${Math.round((nowSec-s.time)/3600*10)/10}h y ya no es operable.`);
+        continue;
+      }
+      fresh.push(s);
       const buy = s.type==='BUY';
       const head = s.kind==='break'
         ? `${buy?'🟢':'🔴'} <b>RUPTURA ${buy?'ALCISTA':'BAJISTA'}</b>${s.strong?' (vol. alto)':''}`
