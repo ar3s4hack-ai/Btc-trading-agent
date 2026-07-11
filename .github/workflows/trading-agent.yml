@@ -3,7 +3,11 @@ name: Agente autónomo (análisis + alertas)
 on:
   workflow_dispatch: {}        # lanzable a mano desde la pestaña Actions
   schedule:
-    - cron: '*/30 * * * *'     # cada 30 min (GitHub puede retrasarlo unos minutos)
+    # nominal cada 15 min en minutos descolocados (:04/:19/:34/:49): GitHub
+    # recorta los crons en las horas punta de :00/:30, y con la frecuencia
+    # anterior (*/30) el hueco real medio era de 128 min con picos de 285 —
+    # suficiente para perder señales válidas (caso del 09/07, nota 65.3%)
+    - cron: '4,19,34,49 * * * *'
 
 permissions:
   contents: write
