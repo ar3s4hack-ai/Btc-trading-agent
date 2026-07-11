@@ -180,5 +180,20 @@
    "fng": 23,
    "premium": -0.08
   }
+ },
+ {
+  "tf": "1h",
+  "time": 1783778400,
+  "kind": "break",
+  "type": "BUY",
+  "price": 64350.07,
+  "prob": 60.6,
+  "conviction": false,
+  "operada": false,
+  "fund": {
+   "score": -30,
+   "fng": 26,
+   "premium": -0.44
+  }
  }
 ]
