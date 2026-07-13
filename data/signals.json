@@ -1,21 +1,21 @@
 {
- "generated_at": "2026-07-13T00:14:07.482Z",
+ "generated_at": "2026-07-13T04:05:22.932Z",
  "symbol": "BTCUSDT",
  "tfs": {
   "1h": {
-   "price": 63780,
+   "price": 62806.41,
    "candles": 719,
    "state": "SELL",
    "zone": null,
-   "winRate": 65.8,
+   "winRate": 65.1,
    "byKind": {
     "break": {
-     "w": 12,
-     "l": 8
+     "w": 13,
+     "l": 9
     },
     "ema": {
-     "w": 13,
-     "l": 5
+     "w": 15,
+     "l": 6
     }
    },
    "signals": [
@@ -29,7 +29,7 @@
       "top": 64310,
       "bottom": 63656
      },
-     "outcome": "open",
+     "outcome": "loss",
      "prob": 60.6
     },
     {
@@ -39,7 +39,7 @@
      "price": 63828.47,
      "strong": false,
      "zone": null,
-     "outcome": "open",
+     "outcome": "win",
      "prob": 59.9
     },
     {
@@ -49,7 +49,7 @@
      "price": 64176,
      "strong": false,
      "zone": null,
-     "outcome": "open",
+     "outcome": "loss",
      "prob": 59.9
     },
     {
@@ -62,7 +62,7 @@
       "top": 64290.11,
       "bottom": 63891.84
      },
-     "outcome": "open",
+     "outcome": "win",
      "prob": 59.7
     },
     {
@@ -72,19 +72,16 @@
      "price": 63886.87,
      "strong": false,
      "zone": null,
-     "outcome": "open",
+     "outcome": "win",
      "prob": 59.7
     }
    ]
   },
   "4h": {
-   "price": 63780,
+   "price": 62806.41,
    "candles": 179,
-   "state": "range",
-   "zone": {
-    "top": 64692.83,
-    "bottom": 63640.83
-   },
+   "state": "SELL",
+   "zone": null,
    "winRate": 50,
    "byKind": {
     "break": {
@@ -97,19 +94,6 @@
     }
    },
    "signals": [
-    {
-     "time": 1782820800,
-     "kind": "break",
-     "type": "SELL",
-     "price": 58381.99,
-     "strong": true,
-     "zone": {
-      "top": 60780.57,
-      "bottom": 58900.01
-     },
-     "outcome": "loss",
-     "prob": 67.6
-    },
     {
      "time": 1782950400,
      "kind": "ema",
@@ -152,6 +136,19 @@
      "zone": null,
      "outcome": "win",
      "prob": 54.4
+    },
+    {
+     "time": 1783900800,
+     "kind": "break",
+     "type": "SELL",
+     "price": 62806.41,
+     "strong": true,
+     "zone": {
+      "top": 64692.83,
+      "bottom": 63640.83
+     },
+     "outcome": "open",
+     "prob": 65.4
     }
    ]
   }
