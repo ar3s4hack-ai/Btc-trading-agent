@@ -1,12 +1,26 @@
 {
  "start_balance": 200,
- "balance": 200,
+ "balance": 180,
  "stats": {
   "closed": 0,
   "wins": 0,
   "pnl_total": 0
  },
- "open": [],
+ "open": [
+  {
+   "id": "4h-1783900800-SELL",
+   "tf": "4h",
+   "type": "SELL",
+   "time": 1783900800,
+   "entry": 62806.41,
+   "signal_price": 62806.41,
+   "stake": 20,
+   "tp": 61550.28,
+   "sl": 64879.02,
+   "kind": "break",
+   "prob": 65.4
+  }
+ ],
  "closed": [],
  "equity": [
   {
@@ -492,8 +506,12 @@
   {
    "t": 1783901647,
    "e": 200
+  },
+  {
+   "t": 1783915522,
+   "e": 200
   }
  ],
- "updated_at": "2026-07-13T00:14:07.000Z",
+ "updated_at": "2026-07-13T04:05:22.000Z",
  "peak": 200
 }

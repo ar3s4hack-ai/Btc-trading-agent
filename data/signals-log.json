@@ -255,5 +255,20 @@
    "fng": 26,
    "premium": -0.27
   }
+ },
+ {
+  "tf": "4h",
+  "time": 1783900800,
+  "kind": "break",
+  "type": "SELL",
+  "price": 62806.41,
+  "prob": 65.4,
+  "conviction": true,
+  "operada": true,
+  "fund": {
+   "score": -24,
+   "fng": 28,
+   "premium": -0.23
+  }
  }
 ]
