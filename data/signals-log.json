@@ -270,5 +270,20 @@
    "fng": 28,
    "premium": -0.23
   }
+ },
+ {
+  "tf": "4h",
+  "time": 1783915200,
+  "kind": "ema",
+  "type": "SELL",
+  "price": 62985.52,
+  "prob": 63.4,
+  "conviction": false,
+  "operada": false,
+  "fund": {
+   "score": -24,
+   "fng": 28,
+   "premium": -0.4
+  }
  }
 ]
