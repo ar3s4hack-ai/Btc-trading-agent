@@ -1,21 +1,21 @@
 {
- "generated_at": "2026-07-14T18:44:54.619Z",
+ "generated_at": "2026-07-14T20:00:33.820Z",
  "symbol": "BTCUSDT",
  "tfs": {
   "1h": {
-   "price": 64621.43,
+   "price": 64569.59,
    "candles": 719,
    "state": "BUY",
    "zone": null,
    "winRate": 64.3,
    "byKind": {
-    "break": {
-     "w": 12,
-     "l": 10
-    },
     "ema": {
      "w": 15,
-     "l": 5
+     "l": 6
+    },
+    "break": {
+     "w": 12,
+     "l": 9
     }
    },
    "signals": [
@@ -78,9 +78,9 @@
    ]
   },
   "4h": {
-   "price": 64743.99,
+   "price": 64569.59,
    "candles": 179,
-   "state": "SELL",
+   "state": "BUY",
    "zone": null,
    "winRate": 36.4,
    "byKind": {
@@ -94,19 +94,6 @@
     }
    },
    "signals": [
-    {
-     "time": 1783281600,
-     "kind": "break",
-     "type": "BUY",
-     "price": 63650,
-     "strong": true,
-     "zone": {
-      "top": 63461.99,
-      "bottom": 62186.01
-     },
-     "outcome": "loss",
-     "prob": 58.6
-    },
     {
      "time": 1783512000,
      "kind": "ema",
@@ -149,6 +136,16 @@
      "zone": null,
      "outcome": "open",
      "prob": 63.4
+    },
+    {
+     "time": 1784044800,
+     "kind": "ema",
+     "type": "BUY",
+     "price": 64569.59,
+     "strong": false,
+     "zone": null,
+     "outcome": "open",
+     "prob": 57
     }
    ]
   }
