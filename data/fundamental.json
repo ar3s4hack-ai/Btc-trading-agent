@@ -1,20 +1,20 @@
 {
- "generated_at": "2026-07-19T01:08:39.757Z",
+ "generated_at": "2026-07-19T04:39:39.100Z",
  "fng": {
   "value": 28,
   "label": "Fear",
   "prev": 25
  },
  "premium": {
-  "coinbase": 64737.91,
-  "premiumPct": -0.08
+  "coinbase": 64736.99,
+  "premiumPct": 0.05
  },
  "red": {
-  "difficultyChangePct": -0.09,
-  "fastestFee": 2
+  "difficultyChangePct": 0.28,
+  "fastestFee": 1
  },
  "composite": {
-  "score": 5,
+  "score": 26,
   "label": "neutral"
  }
 }
