@@ -1,5 +1,5 @@
 {
- "trained_at": "2026-07-20T06:07:39Z",
+ "trained_at": "2026-07-20T06:28:29Z",
  "days": 730,
  "symbol": "BTCUSDT",
  "tfs": {
@@ -66,8 +66,8 @@
     "base_rate": 0.6229,
     "auc_lr": 0.467,
     "acc_lr": 0.6229,
-    "auc_gbm": 0.5267,
-    "acc_gbm": 0.6256,
+    "auc_gbm": 0.5221,
+    "acc_gbm": 0.6227,
     "thr_precision": 0.6576,
     "thr_n_test": 698
    }
