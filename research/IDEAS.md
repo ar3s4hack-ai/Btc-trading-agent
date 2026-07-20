@@ -15,7 +15,10 @@ Acumulado y priorizado por el ciclo diario de investigación. Regla: nada entra 
 | 8 | **Filtro de régimen explícito**: pausar cruces EMA cuando no hay tendencia (ADX bajo / canal estrecho) y en volatilidad extrema | Causa nº 1 de muerte de bots: estrategia de tendencia en mercado sin tendencia (informe 2026-07-06) | Medio (indicador + backtest + espejo) | Menos operaciones perdedoras en lateral | Propuesta (evaluar con la cartera C) |
 | 9 | **Aviso Telegram al publicarse un informe de investigación** | Los informes no sirven si nadie los ve | Bajo (workflow con filtro de rutas) | Visibilidad del ciclo de investigación | ✅ Hecho 2026-07-06 |
 
+| 10 | **Listón auto-calibrado por reentrenamiento** (exportado en `model.json`) + **entrenamiento con 2 años** de datos | Inspección 19/07: el modelo derivó a AUC 0,51 en 1h con la ventana de 1 año y el listón fijo 64 dejó de tener sentido (sequía de señales); el calibrado logra base+3pts verificados en test con listones 63,3/59,9 | Medio | Más señales cuando el modelo acierta, prudencia automática cuando no | ✅ Hecho 2026-07-19 |
+
 ## Descartado (con motivo)
 
 - **Modelos transformer/deep learning**: mejoras marginales publicadas, coste alto, se pierde la evaluación en navegador y la interpretabilidad (informe 2026-07-04 §5).
-- **Bajar el umbral de convicción a <64 %**: el backtest muestra que el acierto cae hacia la tasa base; la escasez de señales es diseño, no defecto.
+- **Bajar el umbral de convicción a ojo**: el backtest muestra que el acierto cae hacia la tasa base. La respuesta correcta resultó ser el listón auto-calibrado (idea #10), no un número más bajo elegido a mano.
+- **Operar rupturas sin el examen ML** (probado 19/07): −6,29 USD/año en 1h y −0,68 en 4h con costes. El filtro ML, aun débil, aporta selección.

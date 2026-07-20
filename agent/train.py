@@ -152,17 +152,41 @@ def train_tf(tf):
                                          learning_rate=0.06).fit(Xtr, ytr)
     p_gbm = gbm.predict_proba(Xte)[:, 1]
 
+    # Umbral auto-calibrado sobre el tramo de test (nunca visto): el más laxo
+    # cuyos seleccionados mantienen precisión >= tasa base + 3 puntos con una
+    # muestra mínima. Un umbral fijo no sobrevive a la deriva del modelo entre
+    # reentrenos; este se adapta cada semana y viaja en model.json.
+    base = float(yte.mean())
+    thr, thr_prec, thr_n = None, None, 0
+    for q in range(55, 98):
+        cand = float(np.percentile(p_lr, q))
+        sel = p_lr >= cand
+        n = int(sel.sum())
+        if n < 12:
+            break
+        prec = float(yte[sel].mean())
+        if prec >= base + 0.03:
+            thr, thr_prec, thr_n = cand, prec, n
+            break
+    if thr is None:  # sin ventaja demostrable: exigente por defecto (top 8%)
+        thr = float(np.percentile(p_lr, 92))
+        sel = p_lr >= thr
+        thr_n = int(sel.sum())
+        thr_prec = float(yte[sel].mean()) if thr_n else base
+
     metrics = {
         "n_train": int(cut), "n_test": int(len(X) - cut),
-        "base_rate": round(float(yte.mean()), 4),
+        "base_rate": round(base, 4),
         "auc_lr": round(float(roc_auc_score(yte, p_lr)), 4),
         "acc_lr": round(float(accuracy_score(yte, p_lr > 0.5)), 4),
         "auc_gbm": round(float(roc_auc_score(yte, p_gbm)), 4),
         "acc_gbm": round(float(accuracy_score(yte, p_gbm > 0.5)), 4),
+        "thr_precision": round(thr_prec, 4), "thr_n_test": thr_n,
     }
-    print(f"{tf}: {metrics}", file=sys.stderr)
+    print(f"{tf}: {metrics} thr={round(thr*100,1)}%", file=sys.stderr)
     return {
         "features": FEATURES, "tp": tp, "sl": sl,
+        "thr": round(thr*1000)/10,  # listón en % para run.js y el dashboard
         "mu": [round(float(v), 8) for v in scaler.mean_],
         "sigma": [round(float(v), 8) for v in scaler.scale_],
         "w": [round(float(v), 8) for v in lr.coef_[0]],
@@ -175,7 +199,7 @@ def main():
     model = {
         "trained_at": datetime.datetime.now(datetime.timezone.utc)
             .strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "days": 365, "symbol": "BTCUSDT",
+        "days": 730, "symbol": "BTCUSDT",
         "tfs": {tf: train_tf(tf) for tf in TF_PARAMS},
     }
     out = os.path.join(DATA, "model.json")

@@ -10,7 +10,8 @@ import csv, gzip, io, json, os, sys, time, urllib.request
 
 HOSTS = ["https://data-api.binance.vision", "https://api.binance.com"]
 SYMBOL = "BTCUSDT"
-DAYS = 365
+DAYS = 730  # 2 años: estabiliza el modelo entre reentrenos (AUC 1h cayó a
+            # 0.51 con la ventana de 1 año deslizante; más regímenes = menos deriva)
 TFS = {"1h": 3600, "4h": 14400}
 OUT_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 
