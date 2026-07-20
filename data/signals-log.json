@@ -465,5 +465,20 @@
    "fng": 29,
    "premium": -0.65
   }
+ },
+ {
+  "tf": "1h",
+  "time": 1784548800,
+  "kind": "ema",
+  "type": "BUY",
+  "price": 64640,
+  "prob": 63.4,
+  "conviction": false,
+  "operada": false,
+  "fund": {
+   "score": 62,
+   "fng": 29,
+   "premium": 0.75
+  }
  }
 ]
