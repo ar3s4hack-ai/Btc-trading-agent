@@ -1,11 +1,11 @@
 {
- "generated_at": "2026-07-20T04:11:12.148Z",
+ "generated_at": "2026-07-20T06:10:28.395Z",
  "symbol": "BTCUSDT",
  "tfs": {
   "1h": {
-   "price": 64869.8,
+   "price": 64128,
    "candles": 719,
-   "state": "BUY",
+   "state": "SELL",
    "zone": null,
    "winRate": 66.7,
    "byKind": {
@@ -20,19 +20,6 @@
    },
    "signals": [
     {
-     "time": 1784185200,
-     "kind": "break",
-     "type": "SELL",
-     "price": 64238,
-     "strong": true,
-     "zone": {
-      "top": 65055.39,
-      "bottom": 64392.01
-     },
-     "outcome": "win",
-     "prob": 61.1
-    },
-    {
      "time": 1784311200,
      "kind": "ema",
      "type": "BUY",
@@ -40,7 +27,7 @@
      "strong": false,
      "zone": null,
      "outcome": "win",
-     "prob": 61.1
+     "prob": 63
     },
     {
      "time": 1784394000,
@@ -53,7 +40,7 @@
       "bottom": 63884.35
      },
      "outcome": "open",
-     "prob": 60.6
+     "prob": 63.4
     },
     {
      "time": 1784451600,
@@ -66,7 +53,7 @@
       "bottom": 64610.89
      },
      "outcome": "open",
-     "prob": 60.9
+     "prob": 62.2
     },
     {
      "time": 1784498400,
@@ -76,7 +63,17 @@
      "strong": false,
      "zone": null,
      "outcome": "open",
-     "prob": 61.5
+     "prob": 64.2
+    },
+    {
+     "time": 1784523600,
+     "kind": "ema",
+     "type": "SELL",
+     "price": 64128,
+     "strong": false,
+     "zone": null,
+     "outcome": "open",
+     "prob": 61.1
     }
    ]
   },
@@ -111,7 +108,7 @@
       "bottom": 63640.83
      },
      "outcome": "loss",
-     "prob": 64
+     "prob": 61.2
     },
     {
      "time": 1783915200,
@@ -121,7 +118,7 @@
      "strong": false,
      "zone": null,
      "outcome": "loss",
-     "prob": 63.4
+     "prob": 60
     },
     {
      "time": 1784044800,
@@ -131,7 +128,7 @@
      "strong": false,
      "zone": null,
      "outcome": "open",
-     "prob": 57
+     "prob": 60.1
     },
     {
      "time": 1784260800,
@@ -141,7 +138,7 @@
      "strong": false,
      "zone": null,
      "outcome": "loss",
-     "prob": 63.3
+     "prob": 60
     },
     {
      "time": 1784390400,
@@ -151,7 +148,7 @@
      "strong": false,
      "zone": null,
      "outcome": "open",
-     "prob": 54.6
+     "prob": 59.4
     }
    ]
   }
