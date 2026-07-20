@@ -15,11 +15,11 @@ const fundamental = require('./fundamental.js');
 
 const HOSTS = ['https://data-api.binance.vision', 'https://api.binance.com'];
 const SYMBOL = 'BTCUSDT';
-// Solo se alertan señales de convicción: probabilidad ML de alcanzar el TP
-// >= MIN_PROB (calibrado con 1 año de backtest: ~5 alertas/mes entre 1h y 4h
-// con ~75% de acierto; por debajo el winRate cae a la tasa base ~62%). Si no
-// hay modelo se alertan solo rupturas con volumen alto. El resto de señales
-// queda en el dashboard (signals.json) pero no genera mensaje de Telegram.
+// Solo se alertan/operan señales de convicción: probabilidad ML >= listón.
+// El listón viaja en model.json (auto-calibrado en cada reentrenamiento sobre
+// el tramo de test walk-forward: el más laxo con precisión >= base + 3pts);
+// MIN_PROB queda como respaldo si el modelo aún no trae umbral. Sin modelo,
+// se operan solo rupturas con volumen alto.
 const MIN_PROB = 64;
 // Ventana de frescura por timeframe (en velas): solo se opera lo reciente.
 // Dimensionada con datos: el hueco máximo medido entre pasadas de Actions
@@ -137,8 +137,9 @@ async function main(){
     // señal nueva = posterior a la última vista en la ejecución anterior
     const prevLast = prev && prev.tfs && prev.tfs[tf] && prev.tfs[tf].signals.length
       ? prev.tfs[tf].signals[prev.tfs[tf].signals.length-1].time : 0;
+    const liston = (mtf && mtf.thr) || MIN_PROB;
     const conviction = s => s.prob!=null
-      ? s.prob>=MIN_PROB
+      ? s.prob>=liston
       : (s.kind==='break' && s.strong);
     const fresh = [];
     for(const s of recent){
@@ -148,11 +149,10 @@ async function main(){
       siglog.push({tf, time:s.time, kind:s.kind, type:s.type, price:s.price,
                    prob:s.prob, conviction: conviction(s), operada: conviction(s) && esFresca});
       if(!conviction(s)){
-        // aviso informativo si roza el listón (62-64): visibilidad de que el
-        // agente examina y descarta, sin abrir posiciones (backtest: por
-        // debajo de 64 las señales pierden dinero con nuestros perfiles)
-        if(s.prob!=null && s.prob>=62 && esFresca){
-          newAlerts.push(`🔕 Señal descartada — BTC/USDT ${tf}: ${s.kind==='break'?'ruptura':'cruce'} ${s.type==='BUY'?'alcista':'bajista'} a ${fmt$(s.price)} con nota <b>${s.prob}%</b> (listón 64%). Sin operación.`);
+        // aviso informativo si roza el listón (a menos de 2 puntos):
+        // visibilidad de que el agente examina y descarta, sin abrir posiciones
+        if(s.prob!=null && s.prob>=liston-2 && esFresca){
+          newAlerts.push(`🔕 Señal descartada — BTC/USDT ${tf}: ${s.kind==='break'?'ruptura':'cruce'} ${s.type==='BUY'?'alcista':'bajista'} a ${fmt$(s.price)} con nota <b>${s.prob}%</b> (listón ${liston}%). Sin operación.`);
         }
         continue;
       }

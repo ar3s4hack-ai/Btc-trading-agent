@@ -19,7 +19,7 @@ Dashboard de señales de Bitcoin con detección de **consolidaciones y rupturas*
 Para evitar el ruido típico de los cruces de EMA en mercado lateral, las señales pasan dos filtros:
 
 1. **En el motor** (`lib/agent-core.js`): los cruces EMA 9/21 solo cuentan a favor de la tendencia (precio por encima/debajo de la EMA50), con bandas de RSI estrictas (48–68 compra, 32–52 venta) y un enfriamiento mínimo de 10 velas entre señales del mismo tipo.
-2. **En las alertas de Telegram** (`agent/run.js`): solo se avisa de señales con probabilidad ML ≥ 64 % de alcanzar el take profit antes que el stop. Calibrado con 1 año de backtest: ~5 alertas al mes entre 1h y 4h con ~75 % de acierto, frente a la tasa base del ~62 %. El resto de señales sigue visible en el dashboard, pero no interrumpe.
+2. **En las alertas y operaciones** (`agent/run.js`): solo pasan las señales cuya probabilidad ML supera el **listón auto-calibrado** que cada reentrenamiento exporta en `model.json` — el umbral más laxo cuya precisión sobre el tramo de test walk-forward (nunca visto) supera la tasa base en ≥ 3 puntos. Así el filtro se adapta a la deriva semanal del modelo: más señales cuando demuestra puntería, más prudencia cuando no. El resto de señales sigue visible en el dashboard, y las que rozan el listón llegan como aviso informativo sin operación.
 
 ## Arquitectura
 
