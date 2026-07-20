@@ -435,5 +435,20 @@
    "fng": 28,
    "premium": -0.02
   }
+ },
+ {
+  "tf": "1h",
+  "time": 1784523600,
+  "kind": "ema",
+  "type": "SELL",
+  "price": 64128,
+  "prob": 61.1,
+  "conviction": false,
+  "operada": false,
+  "fund": {
+   "score": 5,
+   "fng": 29,
+   "premium": -0.1
+  }
  }
 ]
