@@ -17,6 +17,9 @@ Acumulado y priorizado por el ciclo diario de investigación. Regla: nada entra 
 
 | 10 | **Listón auto-calibrado por reentrenamiento** (exportado en `model.json`) + **entrenamiento con 2 años** de datos | Inspección 19/07: el modelo derivó a AUC 0,51 en 1h con la ventana de 1 año y el listón fijo 64 dejó de tener sentido (sequía de señales); el calibrado logra base+3pts verificados en test con listones 63,3/59,9 | Medio | Más señales cuando el modelo acierta, prudencia automática cuando no | ✅ Hecho 2026-07-19 |
 
+| 11 | **4 features nuevas** (distancia EMA50/ATR, ATR relativo 50, día de la semana) + **bandera `edge`** (sin ventaja demostrada en test → solo rupturas fuertes) + **resolución de desenlaces** en signals-log + embudo semanal y listón visibles | Revisión 02/08: 27 señales/0 aprobadas; con las features nuevas el 4h certifica ventaja por primera vez (+4,3 pts, n=215) y el 1h pierde la suya — la bandera edge lo gestiona con honestidad. Paridad JS↔Python verificada (desviación 0) | Medio | Ventaja real donde existe, freno donde no, y auditoría viva del listón | ✅ Hecho 2026-08-02 |
+| 12 | **Exportar el GBM en vez de la regresión logística** | Con las features nuevas el GBM saca AUC 0,52 vs 0,48 de la LR — la relación es no lineal | Alto (árboles en JSON + evaluador JS) | Posible salto del filtro | Propuesta |
+
 ## Descartado (con motivo)
 
 - **Modelos transformer/deep learning**: mejoras marginales publicadas, coste alto, se pierde la evaluación en navegador y la interpretabilidad (informe 2026-07-04 §5).

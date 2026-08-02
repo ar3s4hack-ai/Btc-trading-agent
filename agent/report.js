@@ -55,8 +55,26 @@ async function main(){
       : `\n\n${orden[0][1]} La <b>${orden[0][0]}</b> va en cabeza, ${fmt(d)} USDT sobre la siguiente.`;
   }
 
+  // embudo de señales de la semana + precisión viva acumulada del registro
+  let embudo = '';
+  const slog = load('signals-log.json') || [];
+  const sem = slog.filter(s => s.time >= semanaDesde);
+  if(sem.length){
+    const conv = sem.filter(s => s.conviction).length;
+    const mejor = Math.max(...sem.map(s => s.prob || 0));
+    embudo = `\n\n🔎 <b>Señales de la semana</b>: ${sem.length} examinadas · ${conv} aprobadas · mejor nota ${mejor}%`;
+  }
+  const resueltas = slog.filter(s => s.outcome==='win' || s.outcome==='loss');
+  if(resueltas.length >= 10){
+    const win = resueltas.filter(s => s.outcome==='win').length;
+    const altas = resueltas.filter(s => (s.prob||0) >= 62);
+    const winAltas = altas.filter(s => s.outcome==='win').length;
+    embudo += `\nPrecisión viva del registro: ${Math.round(win/resueltas.length*100)}% (${resueltas.length} señales)` +
+      (altas.length >= 5 ? ` · con nota ≥62: ${Math.round(winAltas/altas.length*100)}% (${altas.length})` : '');
+  }
+
   const msg = `📊 <b>Resumen semanal · Paper trading</b>\n\n` +
-    carteras.map(x => x[2].linea).join('\n\n') + veredicto +
+    carteras.map(x => x[2].linea).join('\n\n') + veredicto + embudo +
     '\n\n<i>BTC Trading Agent · dinero ficticio, no es asesoramiento financiero</i>';
   console.error(msg.replace(/<[^>]+>/g, ''));
   await telegram(msg);

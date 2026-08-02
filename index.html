@@ -341,6 +341,7 @@ footer a:hover{color:var(--accent)}
       <div class="strat-row"><span class="strat-k">AUC test (LR / GBM)</span><span class="strat-v" id="mlAUC">—</span></div>
       <div class="strat-row"><span class="strat-k">Acierto test vs azar</span><span class="strat-v" id="mlAcc">—</span></div>
       <div class="strat-row"><span class="strat-k">Prob. señal actual</span><span class="strat-v" id="mlProb">—</span></div>
+      <div class="strat-row"><span class="strat-k">Listón de convicción</span><span class="strat-v" id="mlThr">—</span></div>
       <div class="strat-row"><span class="strat-k">Qué predice</span><span class="strat-v">P(TP antes que SL) por señal</span></div>
     </div>
   </div>
@@ -773,7 +774,7 @@ function updateML(){
   if(!m){
     probFn = null;
     $('mlStatus').textContent = mlModel ? `sin modelo para ${tf} (hay: ${Object.keys(mlModel.tfs||{}).join(', ')})` : 'pendiente de entrenar (Actions → Entrenar modelo ML)';
-    $('mlSamples').textContent = $('mlAUC').textContent = $('mlAcc').textContent = $('mlProb').textContent = '—';
+    $('mlSamples').textContent = $('mlAUC').textContent = $('mlAcc').textContent = $('mlProb').textContent = $('mlThr').textContent = '—';
     return;
   }
   const rowFn = AgentCore.featurePrep(candles);
@@ -790,6 +791,10 @@ function updateML(){
   const p = last ? sigProb(last) : null;
   $('mlProb').textContent = p!=null ? `${p}% (${last.type==='BUY'?'compra':'venta'} ${tf})` : '—';
   $('mlProb').style.color = p!=null && p>=55 ? 'var(--accent)' : '';
+  $('mlThr').textContent = m.thr != null
+    ? `${m.thr}% en ${tf} · auto-calibrado (precisión test ${(mt.thr_precision*100).toFixed(1)}% vs base ${(mt.base_rate*100).toFixed(1)}%)` +
+      (m.edge === false ? ' · sin ventaja demostrada: solo rupturas fuertes' : '')
+    : '64% (fijo)';
 }
 /* ── paper trading A/B: carteras simuladas del agente (data/trades*.json) ── */
 let ptChart = null, ptSeriesA = null, ptSeriesB = null, ptSeriesC = null;
