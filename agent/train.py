@@ -27,7 +27,8 @@ DATA = os.path.join(os.path.dirname(__file__), "..", "data")
 TF_PARAMS = {"1h": (0.012, 0.020), "4h": (0.020, 0.033)}  # tp, sl (= agent-core TF)
 LOOKAHEAD = 400   # velas máximas para resolver TP/SL; sin resolver -> se descarta
 FEATURES = ["dir", "rsi", "ema_spread_atr", "close_ema21_atr", "atr_pct",
-            "vol_ratio", "ret5", "ret20", "pos_range20", "hour_sin", "hour_cos"]
+            "vol_ratio", "ret5", "ret20", "pos_range20", "hour_sin", "hour_cos",
+            "close_ema50_atr", "atr_rel50", "dow_sin", "dow_cos"]
 
 
 # ── indicadores: espejo exacto de lib/agent-core.js ──
@@ -86,21 +87,28 @@ def sma(values, period):
 def feature_prep(cs):
     closes = [c["close"] for c in cs]
     e9, e21, r, a = ema(closes, 9), ema(closes, 21), rsi(closes, 14), atr(cs, 14)
+    e50 = ema(closes, 50)
+    a_s = sma([0 if v is None else v for v in a], 50)  # régimen de volatilidad
     vol_s = sma([c["volume"] for c in cs], 20)
     def row(i, direction):
-        if i < 30 or i >= len(cs) or a[i] is None or r[i] is None:
+        if i < 70 or i >= len(cs) or a[i] is None or r[i] is None:
             return None
         c, at = cs[i], a[i] or 1e-9
         win = closes[i - 19:i + 1]
         min20, max20 = min(win), max(win)
-        hr = datetime.datetime.fromtimestamp(c["time"], datetime.timezone.utc).hour
-        ang = 2 * math.pi * hr / 24
+        dt = datetime.datetime.fromtimestamp(c["time"], datetime.timezone.utc)
+        ang = 2 * math.pi * dt.hour / 24
+        # JS getUTCDay(): 0=domingo..6=sábado; Python weekday(): 0=lunes..6=domingo
+        ang_d = 2 * math.pi * ((dt.weekday() + 1) % 7) / 7
         vr = min(5, c["volume"] / vol_s[i]) if (vol_s[i] and vol_s[i] > 0) else 1
         return [direction, r[i] / 100, (e9[i] - e21[i]) / at, (c["close"] - e21[i]) / at,
                 at / c["close"] * 100, vr,
                 (c["close"] / closes[i - 5] - 1) * 100, (c["close"] / closes[i - 20] - 1) * 100,
                 (c["close"] - min20) / (max20 - min20) if max20 > min20 else 0.5,
-                math.sin(ang), math.cos(ang)]
+                math.sin(ang), math.cos(ang),
+                (c["close"] - e50[i]) / at,
+                min(5, at / a_s[i]) if (a_s[i] and a_s[i] > 0) else 1,
+                math.sin(ang_d), math.cos(ang_d)]
     return row
 
 
@@ -157,7 +165,7 @@ def train_tf(tf):
     # muestra mínima. Un umbral fijo no sobrevive a la deriva del modelo entre
     # reentrenos; este se adapta cada semana y viaja en model.json.
     base = float(yte.mean())
-    thr, thr_prec, thr_n = None, None, 0
+    thr, thr_prec, thr_n, edge = None, None, 0, True
     for q in range(55, 98):
         cand = float(np.percentile(p_lr, q))
         sel = p_lr >= cand
@@ -168,7 +176,9 @@ def train_tf(tf):
         if prec >= base + 0.03:
             thr, thr_prec, thr_n = cand, prec, n
             break
-    if thr is None:  # sin ventaja demostrable: exigente por defecto (top 8%)
+    if thr is None:  # sin ventaja demostrable esta semana: edge=False y el
+        # agente solo opera rupturas con volumen que además pasen el top 8%
+        edge = False
         thr = float(np.percentile(p_lr, 92))
         sel = p_lr >= thr
         thr_n = int(sel.sum())
@@ -187,6 +197,7 @@ def train_tf(tf):
     return {
         "features": FEATURES, "tp": tp, "sl": sl,
         "thr": round(thr*1000)/10,  # listón en % para run.js y el dashboard
+        "edge": edge,               # False = sin ventaja demostrada en test
         "mu": [round(float(v), 8) for v in scaler.mean_],
         "sigma": [round(float(v), 8) for v in scaler.scale_],
         "w": [round(float(v), 8) for v in lr.coef_[0]],

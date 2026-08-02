@@ -94,6 +94,26 @@ async function telegram(text){
 function loadJSON(p){ try{ return JSON.parse(fs.readFileSync(p,'utf8')); }catch(e){ return null; } }
 const fmt$ = n => '$'+n.toLocaleString('es-ES',{maximumFractionDigits:0});
 
+/* Resuelve el desenlace real de las señales archivadas (¿TP o SL primero,
+   con el perfil A?). Con esto el registro acumula precisión viva por tramo
+   de nota y el listón se puede auditar con datos reales, no solo con test
+   histórico. 'na' = anterior al histórico disponible; sin campo = pendiente. */
+function resolveOutcomes(siglog, tf, candles){
+  const {tp, sl} = core.TF[tf];
+  for(const s of siglog){
+    if(s.tf !== tf || s.outcome) continue;
+    if(s.time < candles[0].time){ s.outcome = 'na'; continue; }
+    const dir = s.type==='BUY' ? 1 : -1;
+    for(const c of candles){
+      if(c.time <= s.time) continue;
+      const hitSL = dir===1 ? c.low <= s.price*(1-sl) : c.high >= s.price*(1+sl);
+      const hitTP = dir===1 ? c.high >= s.price*(1+tp) : c.low <= s.price*(1-tp);
+      if(hitSL){ s.outcome='loss'; s.outcome_time=c.time; break; }
+      if(hitTP){ s.outcome='win';  s.outcome_time=c.time; break; }
+    }
+  }
+}
+
 async function main(){
   const model = loadJSON(path.join(DATA, 'model.json'));
   const prev = loadJSON(OUT);
@@ -112,6 +132,7 @@ async function main(){
     const candles = (await fetchCandles(tf)).slice(0, -1);
     if(candles.length < 60) throw new Error(`histórico insuficiente para ${tf}: ${candles.length} velas`);
     const an = core.computeSignals(candles);
+    resolveOutcomes(siglog, tf, candles);
     const bt = core.backtest(candles, an.sigs, core.TF[tf].tp, core.TF[tf].sl);
     const mtf = model && model.tfs && model.tfs[tf];
     const rowFn = mtf ? core.featurePrep(candles) : null;
@@ -138,8 +159,12 @@ async function main(){
     const prevLast = prev && prev.tfs && prev.tfs[tf] && prev.tfs[tf].signals.length
       ? prev.tfs[tf].signals[prev.tfs[tf].signals.length-1].time : 0;
     const liston = (mtf && mtf.thr) || MIN_PROB;
+    // edge=false: el reentrenamiento no pudo demostrar ventaja en este tf,
+    // así que la nota alta sola no basta — solo rupturas con volumen alto
+    // que además pasen el listón
+    const edge = !mtf || mtf.edge !== false;
     const conviction = s => s.prob!=null
-      ? s.prob>=liston
+      ? (s.prob>=liston && (edge || (s.kind==='break' && s.strong)))
       : (s.kind==='break' && s.strong);
     const fresh = [];
     for(const s of recent){
