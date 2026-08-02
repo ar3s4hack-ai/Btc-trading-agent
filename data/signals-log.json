@@ -11,7 +11,9 @@
    "score": 59,
    "fng": 23,
    "premium": 0.94
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1783288800
  },
  {
   "tf": "1h",
@@ -25,7 +27,9 @@
    "score": 59,
    "fng": 23,
    "premium": 0.94
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1783288800
  },
  {
   "tf": "4h",
@@ -39,7 +43,9 @@
    "score": 5,
    "fng": 24,
    "premium": -0.08
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1783339200
  },
  {
   "tf": "1h",
@@ -53,7 +59,9 @@
    "score": -23,
    "fng": 24,
    "premium": -0.28
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1783339200
  },
  {
   "tf": "1h",
@@ -67,7 +75,9 @@
    "score": 50,
    "fng": 24,
    "premium": 0.21
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1783371600
  },
  {
   "tf": "1h",
@@ -81,7 +91,9 @@
    "score": 5,
    "fng": 27,
    "premium": -0.04
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1783497600
  },
  {
   "tf": "1h",
@@ -95,7 +107,9 @@
    "score": -7,
    "fng": 27,
    "premium": -0.12
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1783476000
  },
  {
   "tf": "1h",
@@ -109,7 +123,9 @@
    "score": 25,
    "fng": 20,
    "premium": 0.05
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1783497600
  },
  {
   "tf": "4h",
@@ -123,7 +139,9 @@
    "score": 33,
    "fng": 20,
    "premium": 0.1
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1783641600
  },
  {
   "tf": "1h",
@@ -137,7 +155,9 @@
    "score": 6,
    "fng": 22,
    "premium": -0.05
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1783580400
  },
  {
   "tf": "1h",
@@ -151,7 +171,9 @@
    "score": 6,
    "fng": 22,
    "premium": -0.05
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1783645200
  },
  {
   "tf": "1h",
@@ -165,7 +187,9 @@
    "score": 15,
    "fng": 22,
    "premium": 0.01
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1783656000
  },
  {
   "tf": "4h",
@@ -179,7 +203,9 @@
    "score": 0,
    "fng": 23,
    "premium": -0.08
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1783670400
  },
  {
   "tf": "1h",
@@ -194,7 +220,9 @@
    "score": -30,
    "fng": 26,
    "premium": -0.44
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1783911600
  },
  {
   "tf": "1h",
@@ -209,7 +237,9 @@
    "score": -7,
    "fng": 26,
    "premium": -0.12
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1783911600
  },
  {
   "tf": "1h",
@@ -224,7 +254,9 @@
    "score": -2,
    "fng": 26,
    "premium": -0.08
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1783911600
  },
  {
   "tf": "1h",
@@ -239,7 +271,9 @@
    "score": -26,
    "fng": 26,
    "premium": -0.27
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1783911600
  },
  {
   "tf": "1h",
@@ -254,7 +288,9 @@
    "score": -26,
    "fng": 26,
    "premium": -0.27
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1783911600
  },
  {
   "tf": "4h",
@@ -269,7 +305,9 @@
    "score": -24,
    "fng": 28,
    "premium": -0.23
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1784030400
  },
  {
   "tf": "4h",
@@ -284,7 +322,9 @@
    "score": -24,
    "fng": 28,
    "premium": -0.4
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1784059200
  },
  {
   "tf": "1h",
@@ -299,7 +339,9 @@
    "score": 10,
    "fng": 22,
    "premium": -0.1
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1784041200
  },
  {
   "tf": "4h",
@@ -314,7 +356,9 @@
    "score": 22,
    "fng": 22,
    "premium": -0.04
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1784606400
  },
  {
   "tf": "1h",
@@ -329,7 +373,9 @@
    "score": 57,
    "fng": 25,
    "premium": 0.18
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1784203200
  },
  {
   "tf": "1h",
@@ -344,7 +390,9 @@
    "score": 7,
    "fng": 25,
    "premium": -0.11
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1784253600
  },
  {
   "tf": "4h",
@@ -359,7 +407,9 @@
    "score": -2,
    "fng": 27,
    "premium": -0.11
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1784419200
  },
  {
   "tf": "1h",
@@ -374,7 +424,9 @@
    "score": -25,
    "fng": 27,
    "premium": -0.31
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1784505600
  },
  {
   "tf": "1h",
@@ -389,7 +441,9 @@
    "score": 18,
    "fng": 25,
    "premium": -0.01
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1784534400
  },
  {
   "tf": "4h",
@@ -404,7 +458,9 @@
    "score": 27,
    "fng": 25,
    "premium": 0.05
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1784606400
  },
  {
   "tf": "1h",
@@ -419,7 +475,9 @@
    "score": 32,
    "fng": 28,
    "premium": 0.06
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1784534400
  },
  {
   "tf": "1h",
@@ -434,7 +492,9 @@
    "score": 18,
    "fng": 28,
    "premium": -0.02
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1784534400
  },
  {
   "tf": "1h",
@@ -449,7 +509,9 @@
    "score": 5,
    "fng": 29,
    "premium": -0.1
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1784534400
  },
  {
   "tf": "4h",
@@ -464,7 +526,9 @@
    "score": -18,
    "fng": 29,
    "premium": -0.65
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1784620800
  },
  {
   "tf": "1h",
@@ -479,7 +543,9 @@
    "score": 62,
    "fng": 29,
    "premium": 0.75
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1784559600
  },
  {
   "tf": "1h",
@@ -494,7 +560,9 @@
    "score": 14,
    "fng": 25,
    "premium": -0.05
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1784638800
  },
  {
   "tf": "1h",
@@ -509,7 +577,9 @@
    "score": -15,
    "fng": 33,
    "premium": -0.18
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1784808000
  },
  {
   "tf": "1h",
@@ -524,7 +594,9 @@
    "score": -28,
    "fng": 33,
    "premium": -0.25
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1784811600
  },
  {
   "tf": "1h",
@@ -539,7 +611,9 @@
    "score": -27,
    "fng": 31,
    "premium": -0.62
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1784815200
  },
  {
   "tf": "1h",
@@ -554,7 +628,9 @@
    "score": 52,
    "fng": 31,
    "premium": 0.31
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1784898000
  },
  {
   "tf": "4h",
@@ -569,7 +645,9 @@
    "score": 53,
    "fng": 31,
    "premium": 0.36
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1785196800
  },
  {
   "tf": "1h",
@@ -584,7 +662,9 @@
    "score": 37,
    "fng": 28,
    "premium": 0.13
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1784898000
  },
  {
   "tf": "1h",
@@ -599,7 +679,9 @@
    "score": -23,
    "fng": 28,
    "premium": -0.38
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1784898000
  },
  {
   "tf": "1h",
@@ -614,7 +696,9 @@
    "score": 21,
    "fng": 28,
    "premium": 0.02
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1784898000
  },
  {
   "tf": "1h",
@@ -629,7 +713,9 @@
    "score": 1,
    "fng": 27,
    "premium": -0.1
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1785103200
  },
  {
   "tf": "4h",
@@ -644,7 +730,9 @@
    "score": 43,
    "fng": 26,
    "premium": 0.14
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1785499200
  },
  {
   "tf": "4h",
@@ -659,7 +747,9 @@
    "score": 8,
    "fng": 30,
    "premium": -0.05
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1785196800
  },
  {
   "tf": "1h",
@@ -674,7 +764,9 @@
    "score": -6,
    "fng": 30,
    "premium": -0.12
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1785193200
  },
  {
   "tf": "4h",
@@ -689,7 +781,9 @@
    "score": -31,
    "fng": 29,
    "premium": -0.32
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1785499200
  },
  {
   "tf": "1h",
@@ -704,7 +798,9 @@
    "score": -27,
    "fng": 29,
    "premium": -0.42
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1785315600
  },
  {
   "tf": "1h",
@@ -719,7 +815,9 @@
    "score": -7,
    "fng": 29,
    "premium": -0.09
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1785459600
  },
  {
   "tf": "1h",
@@ -734,7 +832,9 @@
    "score": 15,
    "fng": 29,
    "premium": 0.07
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1785409200
  },
  {
   "tf": "1h",
@@ -749,7 +849,9 @@
    "score": 52,
    "fng": 28,
    "premium": 0.29
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1785416400
  },
  {
   "tf": "4h",
@@ -764,7 +866,9 @@
    "score": 24,
    "fng": 28,
    "premium": 0.07
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1785499200
  },
  {
   "tf": "1h",
@@ -779,7 +883,9 @@
    "score": -14,
    "fng": 25,
    "premium": -0.17
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1785502800
  },
  {
   "tf": "1h",
@@ -794,7 +900,9 @@
    "score": -26,
    "fng": 25,
    "premium": -0.5
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1785502800
  },
  {
   "tf": "4h",
@@ -809,7 +917,9 @@
    "score": -22,
    "fng": 25,
    "premium": -0.23
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1785499200
  },
  {
   "tf": "1h",

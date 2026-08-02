@@ -1,9 +1,9 @@
 {
- "generated_at": "2026-08-02T14:52:07.401Z",
+ "generated_at": "2026-08-02T15:21:24.271Z",
  "symbol": "BTCUSDT",
  "tfs": {
   "1h": {
-   "price": 63126.92,
+   "price": 63069.37,
    "candles": 719,
    "state": "BUY",
    "zone": null,
@@ -27,7 +27,7 @@
      "strong": false,
      "zone": null,
      "outcome": "win",
-     "prob": 63
+     "prob": 62.6
     },
     {
      "time": 1785463200,
@@ -40,7 +40,7 @@
       "bottom": 64542.73
      },
      "outcome": "win",
-     "prob": 61.7
+     "prob": 60.5
     },
     {
      "time": 1785470400,
@@ -50,7 +50,7 @@
      "strong": false,
      "zone": null,
      "outcome": "win",
-     "prob": 60.8
+     "prob": 59.4
     },
     {
      "time": 1785603600,
@@ -63,7 +63,7 @@
       "bottom": 62800
      },
      "outcome": "open",
-     "prob": 60.5
+     "prob": 59.3
     },
     {
      "time": 1785639600,
@@ -73,7 +73,7 @@
      "strong": false,
      "zone": null,
      "outcome": "open",
-     "prob": 62.8
+     "prob": 63.7
     }
    ]
   },
@@ -105,7 +105,7 @@
       "bottom": 63810
      },
      "outcome": "loss",
-     "prob": 58.2
+     "prob": 59.6
     },
     {
      "time": 1785110400,
@@ -115,7 +115,7 @@
      "strong": false,
      "zone": null,
      "outcome": "loss",
-     "prob": 59.7
+     "prob": 61.4
     },
     {
      "time": 1785182400,
@@ -125,7 +125,7 @@
      "strong": false,
      "zone": null,
      "outcome": "win",
-     "prob": 59.9
+     "prob": 58.7
     },
     {
      "time": 1785412800,
@@ -135,7 +135,7 @@
      "strong": false,
      "zone": null,
      "outcome": "loss",
-     "prob": 59.7
+     "prob": 57.3
     },
     {
      "time": 1785484800,
@@ -145,7 +145,7 @@
      "strong": false,
      "zone": null,
      "outcome": "win",
-     "prob": 57.7
+     "prob": 56
     }
    ]
   }
