@@ -1002,7 +1002,9 @@
    "score": 24,
    "fng": 25,
    "premium": 0.01
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1786089600
  },
  {
   "tf": "1h",
@@ -1077,6 +1079,21 @@
    "score": 8,
    "fng": 29,
    "premium": -0.06
+  }
+ },
+ {
+  "tf": "4h",
+  "time": 1786089600,
+  "kind": "break",
+  "type": "BUY",
+  "price": 65029.98,
+  "prob": 56.9,
+  "conviction": false,
+  "operada": false,
+  "fund": {
+   "score": 7,
+   "fng": 29,
+   "premium": -0.07
   }
  }
 ]
