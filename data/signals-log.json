@@ -1048,5 +1048,35 @@
    "fng": 29,
    "premium": -0.01
   }
+ },
+ {
+  "tf": "1h",
+  "time": 1786093200,
+  "kind": "break",
+  "type": "BUY",
+  "price": 64839.32,
+  "prob": 62.3,
+  "conviction": false,
+  "operada": false,
+  "fund": {
+   "score": 8,
+   "fng": 29,
+   "premium": -0.06
+  }
+ },
+ {
+  "tf": "1h",
+  "time": 1786093200,
+  "kind": "ema",
+  "type": "BUY",
+  "price": 64839.32,
+  "prob": 62.3,
+  "conviction": false,
+  "operada": false,
+  "fund": {
+   "score": 8,
+   "fng": 29,
+   "premium": -0.06
+  }
  }
 ]
