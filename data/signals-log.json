@@ -1291,7 +1291,9 @@
    "score": 41,
    "fng": 27,
    "premium": 0.19
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1786716000
  },
  {
   "tf": "1h",
@@ -1306,7 +1308,9 @@
    "score": -20,
    "fng": 29,
    "premium": -0.18
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1786716000
  },
  {
   "tf": "1h",
@@ -1321,7 +1325,9 @@
    "score": -30,
    "fng": 29,
    "premium": -0.24
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1786712400
  },
  {
   "tf": "1h",
@@ -1336,7 +1342,9 @@
    "score": -4,
    "fng": 29,
    "premium": -0.08
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1786712400
  },
  {
   "tf": "1h",
