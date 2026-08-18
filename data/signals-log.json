@@ -1461,7 +1461,9 @@
    "score": 13,
    "fng": 31,
    "premium": -0.01
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1787054400
  },
  {
   "tf": "4h",
@@ -1476,7 +1478,9 @@
    "score": 11,
    "fng": 31,
    "premium": -0.03
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1787054400
  },
  {
   "tf": "1h",
