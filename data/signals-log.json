@@ -1549,5 +1549,20 @@
   },
   "outcome": "win",
   "outcome_time": 1787220000
+ },
+ {
+  "tf": "1h",
+  "time": 1787346000,
+  "kind": "break",
+  "type": "BUY",
+  "price": 78505.15,
+  "prob": 63.7,
+  "conviction": false,
+  "operada": false,
+  "fund": {
+   "score": -37,
+   "fng": 72,
+   "premium": -0.1
+  }
  }
 ]
