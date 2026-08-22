@@ -1566,5 +1566,20 @@
   },
   "outcome": "loss",
   "outcome_time": 1787374800
+ },
+ {
+  "tf": "1h",
+  "time": 1787421600,
+  "kind": "ema",
+  "type": "BUY",
+  "price": 77257.86,
+  "prob": 63.3,
+  "conviction": false,
+  "operada": false,
+  "fund": {
+   "score": -16,
+   "fng": 71,
+   "premium": 0.02
+  }
  }
 ]
