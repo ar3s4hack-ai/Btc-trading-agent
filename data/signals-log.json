@@ -1580,6 +1580,23 @@
    "score": -16,
    "fng": 71,
    "premium": 0.02
+  },
+  "outcome": "loss",
+  "outcome_time": 1787461200
+ },
+ {
+  "tf": "1h",
+  "time": 1787461200,
+  "kind": "break",
+  "type": "SELL",
+  "price": 76053.37,
+  "prob": 62.5,
+  "conviction": false,
+  "operada": false,
+  "fund": {
+   "score": 5,
+   "fng": 66,
+   "premium": 0.14
   }
  }
 ]
