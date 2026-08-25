@@ -1,20 +1,20 @@
 {
- "generated_at": "2026-08-25T22:49:00.481Z",
+ "generated_at": "2026-08-25T23:15:59.413Z",
  "fng": {
   "value": 74,
   "label": "Greed",
   "prev": 73
  },
  "premium": {
-  "coinbase": 78850.93,
-  "premiumPct": 0.36
+  "coinbase": 78908.05,
+  "premiumPct": 0.02
  },
  "red": {
-  "difficultyChangePct": -3.29,
-  "fastestFee": 4
+  "difficultyChangePct": -3.5,
+  "fastestFee": 3
  },
  "composite": {
-  "score": 14,
+  "score": -23,
   "label": "neutral"
  }
 }
