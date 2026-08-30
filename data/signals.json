@@ -1,9 +1,9 @@
 {
- "generated_at": "2026-08-30T01:38:12.012Z",
+ "generated_at": "2026-08-30T07:31:07.813Z",
  "symbol": "BTCUSDT",
  "tfs": {
   "1h": {
-   "price": 78179.86,
+   "price": 78280.34,
    "candles": 719,
    "state": "range",
    "zone": {
@@ -87,7 +87,7 @@
    ]
   },
   "4h": {
-   "price": 78230,
+   "price": 78144.68,
    "candles": 179,
    "state": "BUY",
    "zone": null,
