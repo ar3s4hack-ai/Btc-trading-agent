@@ -1,50 +1,24 @@
 {
- "generated_at": "2026-09-04T11:27:38.119Z",
+ "generated_at": "2026-09-04T15:05:03.550Z",
  "symbol": "BTCUSDT",
  "tfs": {
   "1h": {
-   "price": 81179.63,
+   "price": 78915.71,
    "candles": 719,
-   "state": "range",
-   "zone": {
-    "top": 81604.65,
-    "bottom": 80573.21
-   },
-   "winRate": 53.5,
+   "state": "SELL",
+   "zone": null,
+   "winRate": 52.4,
    "byKind": {
-    "ema": {
-     "w": 13,
-     "l": 8
-    },
     "break": {
      "w": 10,
      "l": 12
+    },
+    "ema": {
+     "w": 12,
+     "l": 8
     }
    },
    "signals": [
-    {
-     "time": 1788249600,
-     "kind": "break",
-     "type": "SELL",
-     "price": 77883.28,
-     "strong": true,
-     "zone": {
-      "top": 79250,
-      "bottom": 78375.83
-     },
-     "outcome": "win",
-     "prob": 61.4
-    },
-    {
-     "time": 1788249600,
-     "kind": "ema",
-     "type": "SELL",
-     "price": 77883.28,
-     "strong": false,
-     "zone": null,
-     "outcome": "win",
-     "prob": 61.4
-    },
     {
      "time": 1788400800,
      "kind": "break",
@@ -80,22 +54,45 @@
      },
      "outcome": "win",
      "prob": 63
+    },
+    {
+     "time": 1788523200,
+     "kind": "break",
+     "type": "SELL",
+     "price": 79453.96,
+     "strong": true,
+     "zone": {
+      "top": 81604.65,
+      "bottom": 80573.21
+     },
+     "outcome": "open",
+     "prob": 60.6
+    },
+    {
+     "time": 1788530400,
+     "kind": "ema",
+     "type": "SELL",
+     "price": 78915.71,
+     "strong": false,
+     "zone": null,
+     "outcome": "open",
+     "prob": 59.6
     }
    ]
   },
   "4h": {
-   "price": 80656.87,
+   "price": 81224.86,
    "candles": 179,
    "state": "BUY",
    "zone": null,
-   "winRate": 62.5,
+   "winRate": 57.1,
    "byKind": {
     "break": {
      "w": 3,
      "l": 2
     },
     "ema": {
-     "w": 2,
+     "w": 1,
      "l": 1
     }
    },
@@ -108,7 +105,7 @@
      "strong": false,
      "zone": null,
      "outcome": "win",
-     "prob": 56.1
+     "prob": 55.9
     },
     {
      "time": 1787457600,

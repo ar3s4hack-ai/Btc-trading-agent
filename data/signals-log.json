@@ -1940,5 +1940,35 @@
   },
   "outcome": "win",
   "outcome_time": 1788440400
+ },
+ {
+  "tf": "1h",
+  "time": 1788523200,
+  "kind": "break",
+  "type": "SELL",
+  "price": 79453.96,
+  "prob": 60.6,
+  "conviction": false,
+  "operada": false,
+  "fund": {
+   "score": -1,
+   "fng": 74,
+   "premium": 0.09
+  }
+ },
+ {
+  "tf": "1h",
+  "time": 1788530400,
+  "kind": "ema",
+  "type": "SELL",
+  "price": 78915.71,
+  "prob": 59.6,
+  "conviction": false,
+  "operada": false,
+  "fund": {
+   "score": -1,
+   "fng": 74,
+   "premium": 0.09
+  }
  }
 ]
