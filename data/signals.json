@@ -1,16 +1,16 @@
 {
- "generated_at": "2026-09-07T15:54:44.750Z",
+ "generated_at": "2026-09-07T19:52:13.084Z",
  "symbol": "BTCUSDT",
  "tfs": {
   "1h": {
-   "price": 79191.95,
+   "price": 79196.16,
    "candles": 719,
    "state": "SELL",
    "zone": null,
-   "winRate": 51.3,
+   "winRate": 52.5,
    "byKind": {
     "ema": {
-     "w": 11,
+     "w": 12,
      "l": 9
     },
     "break": {
@@ -69,57 +69,28 @@
      "price": 79724,
      "strong": false,
      "zone": null,
-     "outcome": "open",
+     "outcome": "win",
      "prob": 61.4
     }
    ]
   },
   "4h": {
-   "price": 79420.16,
+   "price": 78821.99,
    "candles": 179,
-   "state": "range",
-   "zone": {
-    "top": 80559.99,
-    "bottom": 79233
-   },
-   "winRate": 40,
+   "state": "SELL",
+   "zone": null,
+   "winRate": 50,
    "byKind": {
     "break": {
      "w": 2,
      "l": 2
     },
     "ema": {
-     "w": 0,
+     "w": 1,
      "l": 1
     }
    },
    "signals": [
-    {
-     "time": 1787457600,
-     "kind": "break",
-     "type": "SELL",
-     "price": 76007.13,
-     "strong": false,
-     "zone": {
-      "top": 78828.15,
-      "bottom": 76243.04
-     },
-     "outcome": "loss",
-     "prob": 61.4
-    },
-    {
-     "time": 1787832000,
-     "kind": "break",
-     "type": "BUY",
-     "price": 80302.32,
-     "strong": true,
-     "zone": {
-      "top": 79563.71,
-      "bottom": 77632.58
-     },
-     "outcome": "loss",
-     "prob": 63.1
-    },
     {
      "time": 1788091200,
      "kind": "break",
@@ -155,6 +126,29 @@
      },
      "outcome": "open",
      "prob": 61.3
+    },
+    {
+     "time": 1788782400,
+     "kind": "break",
+     "type": "SELL",
+     "price": 78821.99,
+     "strong": false,
+     "zone": {
+      "top": 80559.99,
+      "bottom": 79233
+     },
+     "outcome": "open",
+     "prob": 62.6
+    },
+    {
+     "time": 1788782400,
+     "kind": "ema",
+     "type": "SELL",
+     "price": 78821.99,
+     "strong": false,
+     "zone": null,
+     "outcome": "open",
+     "prob": 62.6
     }
    ]
   }
