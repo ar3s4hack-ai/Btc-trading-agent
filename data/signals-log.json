@@ -2073,7 +2073,9 @@
    "score": -33,
    "fng": 71,
    "premium": -0.17
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1788868800
  },
  {
   "tf": "1h",
