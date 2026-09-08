@@ -1954,7 +1954,9 @@
    "score": -1,
    "fng": 74,
    "premium": 0.09
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1788847200
  },
  {
   "tf": "1h",
@@ -1986,7 +1988,9 @@
    "score": -27,
    "fng": 73,
    "premium": -0.07
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1788847200
  },
  {
   "tf": "1h",
@@ -2001,7 +2005,9 @@
    "score": -27,
    "fng": 73,
    "premium": -0.07
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1788847200
  },
  {
   "tf": "1h",
@@ -2016,7 +2022,9 @@
    "score": -22,
    "fng": 73,
    "premium": -0.11
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1788843600
  },
  {
   "tf": "1h",
@@ -2031,7 +2039,9 @@
    "score": -22,
    "fng": 73,
    "premium": -0.11
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1788843600
  },
  {
   "tf": "1h",
@@ -2046,7 +2056,9 @@
    "score": -35,
    "fng": 73,
    "premium": -0.17
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1788847200
  },
  {
   "tf": "4h",
