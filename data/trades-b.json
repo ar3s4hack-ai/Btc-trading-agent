@@ -1,27 +1,12 @@
 {
  "start_balance": 200,
- "balance": 179.68,
+ "balance": 199.99,
  "stats": {
-  "closed": 2,
-  "wins": 1,
-  "pnl_total": -0.36
+  "closed": 3,
+  "wins": 2,
+  "pnl_total": -0.01
  },
- "open": [
-  {
-   "id": "4h-1788782400-SELL",
-   "tf": "4h",
-   "type": "SELL",
-   "time": 1788782400,
-   "entry": 78821.99,
-   "signal_price": 78821.99,
-   "stake": 19.96,
-   "tp": 77245.55,
-   "sl": 81423.12,
-   "kind": "break",
-   "prob": 62.6,
-   "checked": 1789027200
-  }
- ],
+ "open": [],
  "closed": [
   {
    "id": "4h-1783900800-SELL",
@@ -54,6 +39,23 @@
    "prob": 64.2,
    "exit": 80400.1,
    "exit_time": 1788436800,
+   "pnl": 0.35,
+   "reason": "tp"
+  },
+  {
+   "id": "4h-1788782400-SELL",
+   "tf": "4h",
+   "type": "SELL",
+   "time": 1788782400,
+   "entry": 78821.99,
+   "signal_price": 78821.99,
+   "stake": 19.96,
+   "tp": 77245.55,
+   "sl": 81423.12,
+   "kind": "break",
+   "prob": 62.6,
+   "exit": 77245.55,
+   "exit_time": 1789041600,
    "pnl": 0.35,
    "reason": "tp"
   }
@@ -4526,8 +4528,12 @@
   {
    "t": 1789048356,
    "e": 199.89
+  },
+  {
+   "t": 1789061936,
+   "e": 199.99
   }
  ],
- "updated_at": "2026-09-10T13:52:36.000Z",
+ "updated_at": "2026-09-10T17:38:56.000Z",
  "peak": 200.17
 }
