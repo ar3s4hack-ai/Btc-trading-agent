@@ -2137,7 +2137,9 @@
    "score": 34,
    "fng": 66,
    "premium": 0.35
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1789041600
  },
  {
   "tf": "1h",
@@ -2152,7 +2154,9 @@
    "score": 34,
    "fng": 66,
    "premium": 0.35
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1789041600
  },
  {
   "tf": "1h",
@@ -2167,6 +2171,23 @@
    "score": 18,
    "fng": 66,
    "premium": 0.13
+  },
+  "outcome": "win",
+  "outcome_time": 1789041600
+ },
+ {
+  "tf": "1h",
+  "time": 1789041600,
+  "kind": "break",
+  "type": "SELL",
+  "price": 76896.01,
+  "prob": 60.5,
+  "conviction": false,
+  "operada": false,
+  "fund": {
+   "score": 19,
+   "fng": 69,
+   "premium": 0.17
   }
  }
 ]
