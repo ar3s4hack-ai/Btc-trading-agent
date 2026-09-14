@@ -1,21 +1,21 @@
 {
- "generated_at": "2026-09-14T06:26:40.798Z",
+ "generated_at": "2026-09-14T13:16:30.810Z",
  "symbol": "BTCUSDT",
  "tfs": {
   "1h": {
-   "price": 77611.79,
+   "price": 77698.01,
    "candles": 719,
    "state": "SELL",
    "zone": null,
-   "winRate": 55.3,
+   "winRate": 52.5,
    "byKind": {
     "ema": {
      "w": 11,
-     "l": 7
+     "l": 8
     },
     "break": {
      "w": 10,
-     "l": 10
+     "l": 11
     }
    },
    "signals": [
@@ -27,7 +27,7 @@
      "strong": false,
      "zone": null,
      "outcome": "open",
-     "prob": 59.2
+     "prob": 58.9
     },
     {
      "time": 1789232400,
@@ -37,7 +37,7 @@
      "strong": false,
      "zone": null,
      "outcome": "open",
-     "prob": 60.3
+     "prob": 60.2
     },
     {
      "time": 1789286400,
@@ -49,8 +49,8 @@
       "top": 77538.01,
       "bottom": 76883
      },
-     "outcome": "open",
-     "prob": 61.5
+     "outcome": "loss",
+     "prob": 61.3
     },
     {
      "time": 1789322400,
@@ -59,8 +59,8 @@
      "price": 77338.87,
      "strong": false,
      "zone": null,
-     "outcome": "open",
-     "prob": 63.2
+     "outcome": "win",
+     "prob": 63.7
     },
     {
      "time": 1789336800,
@@ -69,13 +69,13 @@
      "price": 76714,
      "strong": false,
      "zone": null,
-     "outcome": "open",
-     "prob": 62
+     "outcome": "loss",
+     "prob": 61.9
     }
    ]
   },
   "4h": {
-   "price": 77596.33,
+   "price": 77776,
    "candles": 179,
    "state": "BUY",
    "zone": null,
@@ -102,7 +102,7 @@
       "bottom": 79233
      },
      "outcome": "loss",
-     "prob": 61.3
+     "prob": 61.4
     },
     {
      "time": 1788782400,
@@ -115,7 +115,7 @@
       "bottom": 79233
      },
      "outcome": "win",
-     "prob": 62.6
+     "prob": 63.1
     },
     {
      "time": 1788782400,
@@ -125,7 +125,7 @@
      "strong": false,
      "zone": null,
      "outcome": "win",
-     "prob": 62.6
+     "prob": 63.1
     },
     {
      "time": 1789286400,
@@ -138,7 +138,7 @@
       "bottom": 76883
      },
      "outcome": "open",
-     "prob": 59.8
+     "prob": 60
     },
     {
      "time": 1789344000,
@@ -151,7 +151,7 @@
       "bottom": 76500
      },
      "outcome": "open",
-     "prob": 59.7
+     "prob": 59.2
     }
    ]
   }
