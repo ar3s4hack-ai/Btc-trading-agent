@@ -2363,5 +2363,20 @@
   },
   "outcome": "win",
   "outcome_time": 1789459200
+ },
+ {
+  "tf": "4h",
+  "time": 1789459200,
+  "kind": "ema",
+  "type": "SELL",
+  "price": 76940.01,
+  "prob": 60.6,
+  "conviction": true,
+  "operada": true,
+  "fund": {
+   "score": -7,
+   "fng": 69,
+   "premium": -0.01
+  }
  }
 ]
