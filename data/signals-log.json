@@ -2413,7 +2413,9 @@
    "score": 0,
    "fng": 50,
    "premium": -0.05
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1789718400
  },
  {
   "tf": "1h",
