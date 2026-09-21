@@ -2481,7 +2481,9 @@
    "score": 6,
    "fng": 71,
    "premium": 0.21
-  }
+  },
+  "outcome": "win",
+  "outcome_time": 1789948800
  },
  {
   "tf": "1h",
