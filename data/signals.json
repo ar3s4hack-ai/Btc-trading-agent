@@ -1,50 +1,24 @@
 {
- "generated_at": "2026-09-30T08:57:45.741Z",
+ "generated_at": "2026-09-30T15:51:29.002Z",
  "symbol": "BTCUSDT",
  "tfs": {
   "1h": {
-   "price": 83304.92,
+   "price": 83800.01,
    "candles": 719,
-   "state": "SELL",
+   "state": "BUY",
    "zone": null,
-   "winRate": 51.4,
+   "winRate": 55.8,
    "byKind": {
     "break": {
-     "w": 9,
-     "l": 9
+     "w": 12,
+     "l": 10
     },
     "ema": {
-     "w": 9,
-     "l": 8
+     "w": 12,
+     "l": 9
     }
    },
    "signals": [
-    {
-     "time": 1790463600,
-     "kind": "break",
-     "type": "BUY",
-     "price": 84433.1,
-     "strong": true,
-     "zone": {
-      "top": 84420.59,
-      "bottom": 83798
-     },
-     "outcome": "loss",
-     "prob": 63.1
-    },
-    {
-     "time": 1790661600,
-     "kind": "break",
-     "type": "BUY",
-     "price": 84007.06,
-     "strong": true,
-     "zone": {
-      "top": 83664.01,
-      "bottom": 82775.94
-     },
-     "outcome": "open",
-     "prob": 62.6
-    },
     {
      "time": 1790665200,
      "kind": "ema",
@@ -52,7 +26,7 @@
      "price": 83980.97,
      "strong": false,
      "zone": null,
-     "outcome": "open",
+     "outcome": "win",
      "prob": 62.9
     },
     {
@@ -62,7 +36,7 @@
      "price": 83061.27,
      "strong": false,
      "zone": null,
-     "outcome": "open",
+     "outcome": "loss",
      "prob": 61.5
     },
     {
@@ -75,13 +49,36 @@
       "top": 83849,
       "bottom": 83078.01
      },
-     "outcome": "open",
+     "outcome": "loss",
      "prob": 61.7
+    },
+    {
+     "time": 1790762400,
+     "kind": "break",
+     "type": "BUY",
+     "price": 83918.01,
+     "strong": true,
+     "zone": {
+      "top": 83812.41,
+      "bottom": 82956.11
+     },
+     "outcome": "win",
+     "prob": 62.5
+    },
+    {
+     "time": 1790766000,
+     "kind": "ema",
+     "type": "BUY",
+     "price": 83915.16,
+     "strong": false,
+     "zone": null,
+     "outcome": "win",
+     "prob": 62.7
     }
    ]
   },
   "4h": {
-   "price": 83304.92,
+   "price": 83915.16,
    "candles": 179,
    "state": "range",
    "zone": {
