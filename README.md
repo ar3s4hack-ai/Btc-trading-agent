@@ -21,6 +21,19 @@ Para evitar el ruido típico de los cruces de EMA en mercado lateral, las señal
 1. **En el motor** (`lib/agent-core.js`): los cruces EMA 9/21 solo cuentan a favor de la tendencia (precio por encima/debajo de la EMA50), con bandas de RSI estrictas (48–68 compra, 32–52 venta) y un enfriamiento mínimo de 10 velas entre señales del mismo tipo.
 2. **En las alertas y operaciones** (`agent/run.js`): solo pasan las señales cuya probabilidad ML supera el **listón auto-calibrado** que cada reentrenamiento exporta en `model.json` — el umbral más laxo cuya precisión sobre el tramo de test walk-forward (nunca visto) supera la tasa base en ≥ 3 puntos. Así el filtro se adapta a la deriva semanal del modelo: más señales cuando demuestra puntería, más prudencia cuando no. El resto de señales sigue visible en el dashboard, y las que rozan el listón llegan como aviso informativo sin operación.
 
+## Agente Rango 9h (señales del rango 09:00-10:00)
+
+`agent/rango9h.js` + workflow `rango9h.yml`. Estrategia "Rango 9h":
+
+- **Regla:** rango 09:00-10:00 (UTC+2 fijo). Desde las 10:00 y hasta las 22:00, la primera vela de 5 min que cierra fuera del rango da la entrada, una al día por activo, de lunes a viernes.
+- **SL/TP:** BTC 600/800 puntos (filtro de amplitud del rango 250-600), SOL 0,72/1,62, resto 0,5 % / 1,12 %.
+- **Activos:** BTC, HYPE, TAO, HBAR, UNI, SUI, SOL y LINK (Binance; KuCoin de respaldo).
+- **Telegram** (mismos secrets que el agente): aviso previo *ROTURA INMINENTE*, la señal con el análisis tipo bot (dudosa por spread, dólares con spread descontado, conveniencia, camino al TP, SL protegido, EQH/EQL de 48 h con toques) y el cierre por TP o SL.
+- **Cartera simulada:** empieza con 500 $ (`CAPITAL`) y cada operación usa 500 $ (`POSITION_USD`); se cambian en `rango9h.yml`. Libro en `data/rango9h-trades.json`.
+- Corre en bucle dentro de Actions (revisa cada minuto) de 08:00 a 22:00, lunes a viernes.
+
+> Backtest de 1 año: BTC con esta regla quedó en torno a +12 R; las altcoins en negativo. Es educativo, no asesoramiento financiero.
+
 ## Arquitectura
 
 ```
