@@ -219,9 +219,11 @@ function pushState(msg) {
 }
 
 async function main() {
+  const first = !fs.existsSync(STATE);
   const st = loadJSON(STATE, { assets: {} });
   const trades = loadJSON(TRADES, null) || { capital: CAPITAL, balance: CAPITAL, list: [] };
   const t0 = Date.now(); let lastPush = Date.now();
+  if (first) await telegram(`✅ <b>Agente Rango 9h activado</b>\nActivos: ${ASSETS.map((x) => x.name).join(', ')}\nCartera simulada: $${CAPITAL} · $${POSITION_USD} por operacion\nRango 09:00-10:00 (UTC+2) · entradas de 10:00 a 22:00, lunes a viernes`);
   do {
     const now = Date.now();
     for (const a of ASSETS) await processAsset(a, st, trades, now);
