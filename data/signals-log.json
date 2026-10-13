@@ -3178,7 +3178,9 @@
    "score": -18,
    "fng": 61,
    "premium": -0.11
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1791842400
  },
  {
   "tf": "4h",
@@ -3223,6 +3225,23 @@
    "score": -23,
    "fng": 69,
    "premium": -0.11
+  },
+  "outcome": "win",
+  "outcome_time": 1791846000
+ },
+ {
+  "tf": "4h",
+  "time": 1791835200,
+  "kind": "ema",
+  "type": "SELL",
+  "price": 81850,
+  "prob": 59.5,
+  "conviction": false,
+  "operada": false,
+  "fund": {
+   "score": 44,
+   "fng": 57,
+   "premium": 0.78
   }
  }
 ]
