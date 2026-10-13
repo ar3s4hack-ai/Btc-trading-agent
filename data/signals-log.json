@@ -3195,7 +3195,9 @@
    "score": -18,
    "fng": 61,
    "premium": -0.11
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1791849600
  },
  {
   "tf": "4h",
@@ -3210,7 +3212,9 @@
    "score": -18,
    "fng": 61,
    "premium": -0.11
-  }
+  },
+  "outcome": "loss",
+  "outcome_time": 1791849600
  },
  {
   "tf": "1h",
@@ -3242,6 +3246,21 @@
    "score": 44,
    "fng": 57,
    "premium": 0.78
+  }
+ },
+ {
+  "tf": "1h",
+  "time": 1791867600,
+  "kind": "ema",
+  "type": "BUY",
+  "price": 83681.87,
+  "prob": 63.5,
+  "conviction": false,
+  "operada": false,
+  "fund": {
+   "score": -4,
+   "fng": 57,
+   "premium": -0.05
   }
  }
 ]
