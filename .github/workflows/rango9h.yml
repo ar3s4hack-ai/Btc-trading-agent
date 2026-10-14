@@ -27,7 +27,8 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           CAPITAL: '500'           # saldo inicial de la cartera simulada ($)
-          POSITION_USD: '500'      # tamano de cada operacion ($); sube para simular apalancamiento
+          POSITION_USD: '500'
+          LEVERAGE: '20'          # solo para mostrar el margen en los mensajes
           RUN_MINUTES: '330'
           POLL_SEC: '60'
         run: node agent/rango9h.js
