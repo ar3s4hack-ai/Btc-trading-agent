@@ -1,0 +1,6 @@
+{
+  "name": "rango9h-agent",
+  "private": true,
+  "engines": { "node": ">=20" },
+  "scripts": { "start": "node agent/rango9h.js" }
+}
