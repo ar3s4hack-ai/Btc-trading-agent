@@ -289,7 +289,7 @@ async function main() {
     const now = Date.now();
     if (now - rateT > 30 * 60e3) { rate = (await eurusd()) || rate; rateT = now; }
     for (const a of ASSETS) await processAsset(a, st, trades, now, rate);
-    st.updated = new Date(now).toISOString(); if (DAEMON) st.daemon = true;
+    st.updated = new Date(now).toISOString(); if (DAEMON) st.daemon = !!(process.env.TELEGRAM_BOT_TOKEN && CHAT);
     saveJSON(STATE, st); saveJSON(TRADES, trades);
     if (Date.now() - lastPush > PUSH_EVERY_MIN * 60e3) { pushState('chore: estado rango9h'); lastPush = Date.now(); }
     if (DAEMON) { await sleep(nextWait()); continue; }
