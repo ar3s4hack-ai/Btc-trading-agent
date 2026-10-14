@@ -22,6 +22,7 @@ const CAPITAL = +(process.env.CAPITAL || 500);                // saldo inicial d
 const POSITION_USD = +(process.env.POSITION_USD || CAPITAL);  // poder (nocional) de cada operacion ($)
 const LEVERAGE = +(process.env.LEVERAGE || 20);               // solo para mostrar el margen (poder / apalancamiento)
 const RUN_MINUTES = +(process.env.RUN_MINUTES || 0);          // 0 = una sola pasada
+const DAEMON = process.env.DAEMON === '1';                     // Railway: siempre encendido, revisa cada pocos segundos
 const POLL_SEC = +(process.env.POLL_SEC || 60);
 const PUSH_EVERY_MIN = 30;
 const TZ_OFF_H = 2;              // UTC+2 fijo todo el ano (como el bot)
@@ -39,7 +40,8 @@ const ASSETS = [
   { name: 'SOL',  bin: 'SOLUSDT',  kc: 'SOL-USDT',  mode: 'pts', tp: 1.62, sl: 0.72, spread: 0.02 },
   { name: 'LINK', bin: 'LINKUSDT', kc: 'LINK-USDT', mode: 'pct', tp: 1.12, sl: 0.5, spread: 0.003 },
 ];
-const DATA = path.join(__dirname, '..', 'data');
+const REPO_DATA = path.join(__dirname, '..', 'data');
+const DATA = process.env.DATA_DIR || REPO_DATA;   // en Railway: volumen persistente
 const STATE = path.join(DATA, 'rango9h-state.json');
 const TRADES = path.join(DATA, 'rango9h-trades.json');
 
@@ -60,8 +62,16 @@ const pct = (x) => sgn(x) + Math.abs(x).toFixed(2) + '%';
 function loadJSON(p, def) { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (e) { return def; } }
 function saveJSON(p, v) { fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, JSON.stringify(v, null, 1)); }
 
+let CHAT = process.env.TELEGRAM_CHAT_ID || null;
+async function findChat(token) {   // sin TELEGRAM_CHAT_ID: usa el ultimo chat que escribio al bot (/start)
+  try { const j = await (await fetch(`https://api.telegram.org/bot${token}/getUpdates`)).json();
+    const u = (j.result || []).map((x) => x.message || x.channel_post || x.my_chat_member).filter(Boolean).pop();
+    if (u && u.chat) { CHAT = String(u.chat.id); console.log('chat detectado:', CHAT); }
+  } catch (e) { console.error('getUpdates:', e.message); }
+  return CHAT;
+}
 async function telegram(text) {
-  const token = process.env.TELEGRAM_BOT_TOKEN, chat = process.env.TELEGRAM_CHAT_ID;
+  const token = process.env.TELEGRAM_BOT_TOKEN; const chat = CHAT || (token ? await findChat(token) : null);
   if (!token || !chat) { console.log('[telegram omitido]\n' + text.replace(/<[^>]+>/g, '') + '\n'); return; }
   try {
     const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -78,10 +88,11 @@ async function klines(a, limit = 700) {
   for (const host of ['https://data-api.binance.vision', 'https://api.binance.com']) {
     try {
       const rows = await getJSON(`${host}/api/v3/klines?symbol=${a.bin}&interval=5m&limit=${Math.min(limit, 1000)}`);
-      if (rows.length) return rows.map((k) => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5], ct: k[6], tb: k[9] != null ? +k[9] : null }));
+      if (rows.length) { if (!klines.src) console.log('datos desde', (klines.src = host)); return rows.map((k) => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5], ct: k[6], tb: k[9] != null ? +k[9] : null })); }
     } catch (e) { /* siguiente fuente */ }
   }
   const end = Math.floor(Date.now() / 1000), start = end - limit * 300;
+  if (klines.src !== 'kucoin') console.log('datos desde', (klines.src = 'kucoin'));
   const j = await getJSON(`https://api.kucoin.com/api/v1/market/candles?type=5min&symbol=${a.kc}&startAt=${start}&endAt=${end}`);
   return (j.data || []).map((k) => ({ t: +k[0] * 1000, o: +k[1], c: +k[2], h: +k[3], l: +k[4], v: +k[5], ct: +k[0] * 1000 + 299999, tb: null })).sort((x, y) => x.t - y.t);
 }
@@ -262,8 +273,13 @@ function pushState(msg) {
   } catch (e) { console.error('push:', e.message); }
 }
 
+// espera hasta 3 s despues del proximo cierre de vela de 5 min, o 20 s como maximo (para el aviso de rotura inminente)
+function nextWait() { const now = Date.now(), toClose = 300e3 - (now % 300e3) + 3e3; return Math.max(2e3, Math.min(toClose, 20e3)); }
+
 async function main() {
-  const first = !fs.existsSync(STATE);
+  if (DATA !== REPO_DATA) for (const f of ['rango9h-state.json', 'rango9h-trades.json'])   // primera vez en el volumen: copia el estado del repo
+    if (!fs.existsSync(path.join(DATA, f)) && fs.existsSync(path.join(REPO_DATA, f))) { fs.mkdirSync(DATA, { recursive: true }); fs.copyFileSync(path.join(REPO_DATA, f), path.join(DATA, f)); }
+  const first = !fs.existsSync(STATE) || (DAEMON && !loadJSON(STATE, {}).daemon);
   const st = loadJSON(STATE, { assets: {} });
   const trades = loadJSON(TRADES, null) || { capital: CAPITAL, balance: CAPITAL, list: [] };
   const t0 = Date.now(); let lastPush = Date.now();
@@ -273,9 +289,10 @@ async function main() {
     const now = Date.now();
     if (now - rateT > 30 * 60e3) { rate = (await eurusd()) || rate; rateT = now; }
     for (const a of ASSETS) await processAsset(a, st, trades, now, rate);
-    st.updated = new Date(now).toISOString();
+    st.updated = new Date(now).toISOString(); if (DAEMON) st.daemon = true;
     saveJSON(STATE, st); saveJSON(TRADES, trades);
     if (Date.now() - lastPush > PUSH_EVERY_MIN * 60e3) { pushState('chore: estado rango9h'); lastPush = Date.now(); }
+    if (DAEMON) { await sleep(nextWait()); continue; }
     if (!RUN_MINUTES) break;
     const open = trades.list.some((x) => !x.res);
     if (minOfDay(Date.now()) >= TIME_EXIT_MIN + 5 && !open) break;   // fuera de horario y sin operaciones abiertas
