@@ -2,7 +2,7 @@
 /* Agente "Rango 9h" (replica del bot del grupo Bibifury, reconstruida con sus mensajes).
    Regla: rango 09:00-10:00 (UTC+2 fijo, como el bot). Desde las 10:00 y hasta las 22:00,
    la primera vela de 5 min que CIERRA fuera del rango da la entrada (una al dia por activo).
-   SL/TP: BTC 600/800 puntos, SOL 0.72/1.62, resto 0.5% / 1.12%. Filtro de amplitud
+   SL/TP: BTC 600/900 puntos, SOL 0.72/1.62, resto 0.5% / 1.125%. Filtro de amplitud
    (250-600 pts) solo en BTC. Solo de lunes a viernes. A las 22:50 se cierra por hora
    lo que siga abierto (como el bot).
    Mensajes por Telegram con el formato del bot: ROTURA INMINENTE (entrada provisional en
@@ -29,16 +29,18 @@ const TZ_OFF_H = 2;              // UTC+2 fijo todo el ano (como el bot)
 const RANGE_H = 9, ENTRY_END_H = 22;
 const TIME_EXIT_MIN = 22 * 60 + 50;   // cierre por hora a las 22:50
 const DEF_SPREAD_PCT = 0.03;     // spread por lado si no se conoce (% del precio)
-// spread por lado deducido de los importes del bot (spread "ya descontado")
+// spread por lado deducido de los importes del bot (spread "ya descontado").
+// Ajustado con las senales del 14/10/2026: el bot usa 20.000 $ de poder y $ = poder x (dist -/+ 2 x spread) / entrada.
+//   BTC 600/900 pts y spread ~0 · TAO/HBAR 0,5 % / 1,125 % (TP = 2,25 x SL) · SOL 0,72/1,62 pts
 const ASSETS = [
-  { name: 'BTC',  bin: 'BTCUSDT',  kc: 'BTC-USDT',  mode: 'pts', tp: 800,  sl: 600,  amp: [250, 600] },
-  { name: 'HYPE', bin: 'HYPEUSDT', kc: 'HYPE-USDT', mode: 'pct', tp: 1.12, sl: 0.5 },
-  { name: 'TAO',  bin: 'TAOUSDT',  kc: 'TAO-USDT',  mode: 'pct', tp: 1.12, sl: 0.5, spread: 0.21 },
-  { name: 'HBAR', bin: 'HBARUSDT', kc: 'HBAR-USDT', mode: 'pct', tp: 1.12, sl: 0.5 },
-  { name: 'UNI',  bin: 'UNIUSDT',  kc: 'UNI-USDT',  mode: 'pct', tp: 1.12, sl: 0.5 },
-  { name: 'SUI',  bin: 'SUIUSDT',  kc: 'SUI-USDT',  mode: 'pct', tp: 1.12, sl: 0.5, spread: 0.00038 },
-  { name: 'SOL',  bin: 'SOLUSDT',  kc: 'SOL-USDT',  mode: 'pts', tp: 1.62, sl: 0.72, spread: 0.02 },
-  { name: 'LINK', bin: 'LINKUSDT', kc: 'LINK-USDT', mode: 'pct', tp: 1.12, sl: 0.5, spread: 0.003 },
+  { name: 'BTC',  bin: 'BTCUSDT',  kc: 'BTC-USDT',  mode: 'pts', tp: 900,   sl: 600,  amp: [250, 600], spread: 0 },
+  { name: 'HYPE', bin: 'HYPEUSDT', kc: 'HYPE-USDT', mode: 'pct', tp: 1.125, sl: 0.5 },
+  { name: 'TAO',  bin: 'TAOUSDT',  kc: 'TAO-USDT',  mode: 'pct', tp: 1.125, sl: 0.5, spread: 0.211 },
+  { name: 'HBAR', bin: 'HBARUSDT', kc: 'HBAR-USDT', mode: 'pct', tp: 1.125, sl: 0.5, spread: 0.0000377 },
+  { name: 'UNI',  bin: 'UNIUSDT',  kc: 'UNI-USDT',  mode: 'pct', tp: 1.125, sl: 0.5 },
+  { name: 'SUI',  bin: 'SUIUSDT',  kc: 'SUI-USDT',  mode: 'pct', tp: 1.125, sl: 0.5, spread: 0.00038 },
+  { name: 'SOL',  bin: 'SOLUSDT',  kc: 'SOL-USDT',  mode: 'pts', tp: 1.62,  sl: 0.72, spread: 0.0213 },
+  { name: 'LINK', bin: 'LINKUSDT', kc: 'LINK-USDT', mode: 'pct', tp: 1.125, sl: 0.5, spread: 0.003 },
 ];
 const REPO_DATA = path.join(__dirname, '..', 'data');
 const DATA = process.env.DATA_DIR || REPO_DATA;   // en Railway: volumen persistente
@@ -132,8 +134,21 @@ function moneyLines(a, e, tp, sl, balance, rate) {
   ].join('\n');
   return { txt, tpUsd, slUsd, sp, tpD, slD };
 }
-function planBlock(e, tp, sl, m) {
-  return `<pre>ENTRADA  ${fx(e)}\nTP       ${fx(tp, e)}   +${fx(m.tpD, e)} pts   ${money(m.tpUsd)}\nSL fijo  ${fx(sl, e)}   -${fx(m.slD, e)} pts   ${money(-m.slUsd)}  ← plan</pre>`;
+// Bloque del plan como el bot: TP y SL fijos + cada EQH/EQL de 48 h en el camino al TP y junto al SL, con su $.
+function planBlock(e, tp, sl, m, dir, lv) {
+  const row = (lab, px, d, usd) => `${lab.padEnd(8)} ${fx(px, e).padStart(10)}  ${(d >= 0 ? '+' : '-') + fx(Math.abs(d), e)} pts  ${money(usd)}`;
+  const sub = (q, kind) => `         ${kind} de 48 h (${q.n} toques en 5 min)`;
+  const L = [`ENTRADA  ${fx(e).padStart(10)}`, row('TP', tp, m.tpD, m.tpUsd)];
+  let tpLv = [], slLv = [];
+  if (lv && dir) {
+    const tpSide = dir === -1 ? lv.eql : lv.eqh, slSide = dir === -1 ? lv.eqh : lv.eql, kTp = dir === -1 ? 'EQL' : 'EQH', kSl = dir === -1 ? 'EQH' : 'EQL';
+    tpLv = tpSide.filter((q) => (dir === -1 ? q.v < e && q.v > tp : q.v > e && q.v < tp)).sort((x, y) => Math.abs(x.v - e) - Math.abs(y.v - e)).map((q) => ({ q, k: kTp }));
+    slLv = slSide.filter((q) => (dir === -1 ? q.v > e && q.v < sl + m.slD * 0.3 : q.v < e && q.v > sl - m.slD * 0.3)).sort((x, y) => Math.abs(x.v - e) - Math.abs(y.v - e)).map((q) => ({ q, k: kSl }));
+  }
+  for (const { q, k } of tpLv) { const d = Math.abs(q.v - e); L.push(row(`TP ${k}`, q.v, d, POSITION_USD * (d - 2 * m.sp) / e), sub(q, k)); }
+  L.push(row('SL fijo', sl, -m.slD, -m.slUsd) + '  ← plan');
+  for (const { q, k } of slLv) { const d = Math.abs(q.v - e); L.push(row(`SL ${k}`, q.v, -d, -POSITION_USD * (d + 2 * m.sp) / e), sub(q, k)); }
+  return `<pre>${L.join('\n')}</pre>`;
 }
 
 // ---------------- analisis tipo bot ----------------
@@ -213,7 +228,7 @@ async function closeTrade(a, tr, trades, px, t, kind, rate) {
   tr.res = kind; tr.t_close = t; tr.px_close = px; tr.pnl = +pnl.toFixed(2); tr.r = tr.slUsd ? +(pnl / tr.slUsd).toFixed(2) : 0;
   trades.balance = +(before + tr.pnl).toFixed(2);
   const head = kind === 'TIME' ? '⏰' : kind === 'TP' ? '✅' : '❌';
-  const what = kind === 'TIME' ? `CIERRE POR HORA · <b>${pnl >= 0 ? 'ganancia' : 'perdida'}</b>` : kind === 'TP' ? '<b>TP alcanzado · ganada</b>' : '<b>SL alcanzado · perdida</b>';
+  const what = kind === 'TIME' ? `CIERRE POR HORA · <b>${pnl >= 0 ? 'ganancia' : 'perdida'}</b>` : kind === 'TP' ? '<b>GANADA</b>' : '<b>PERDIDA</b>';
   await telegram(`${head} ${a.bin} · ${a.name} Rango 9h · ${dmy(tr.t_entry)} ${hhmm(tr.t_entry + 300000)}\n${what} a las ${hhmm(t)}\n${tr.dir === 1 ? 'LONG' : 'SHORT'} desde ${fx(tr.e)} → ${sgn(move)}${fx(Math.abs(move), tr.e)} pts (neto ${sgn(net)}${fx(Math.abs(net), tr.e)} tras spread)\n💰 ${money(pnl)}${eur(pnl, rate)} · ROI ${pct(pnl / POSITION_USD * 100)} · ${pct(pnl / before * 100)} del saldo · saldo ${trades.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}$${rate ? ` (${(trades.balance / rate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€)` : ''}${tr.dudosa_cierre ? '\n<i>La vela toco TP y SL: se cuenta como SL</i>' : ''}`);
 }
 
@@ -246,7 +261,7 @@ async function processAsset(a, st, trades, now, rate) {
       s.pre = true; const dir = live.c > r.hi ? 1 : -1; const lvl = dir === 1 ? r.hi : r.lo; const p = slTp(a, lvl, dir);
       const m = moneyLines(a, lvl, p.tp, p.sl, trades.balance, rate); const dud = Math.abs(live.c - lvl) < m.sp;
       const iL = B.length - 1; const lv = eqLevels(B, iL, atr(B));
-      await telegram(`⚡⚡⚡ <b>ROTURA INMINENTE</b> ⚡⚡⚡${dud ? '\n⚠️⚠️⚠️ <b>DUDOSA · OJO AL SPREAD</b> ⚠️⚠️⚠️' : ''}\n📏 ${a.name}/USDT · ${a.name} Rango 9h · ${dmy(now)} ${hhmm(now)}\nPrecio ${fx(live.c)} · ya ${dir === 1 ? 'por encima del maximo' : 'por debajo del minimo'} ${fx(lvl, live.c)} (${fx(Math.abs(live.c - lvl), live.c)} pts): si la vela de las ${hhmm(live.ct + 1)} cierra asi, entra\n${a.name} Rango 9h: ${fx(r.lo, live.c)} - ${fx(r.hi, live.c)}\nSi una vela de 5 min cierra ${dir === 1 ? 'por encima de' : 'por debajo de'} ${fx(lvl, live.c)} → ${dir === 1 ? '🟢 LONG' : '🔴 SHORT'}\n${planBlock(lvl, p.tp, p.sl, m)}\n${m.txt}\n${pathLines(dir, lvl, p.tp, p.sl, lv)}\n<i>La entrada real sera el cierre de la vela que rompa; los importes son aproximados.</i>`);
+      await telegram(`⚡⚡⚡ <b>ROTURA INMINENTE</b> ⚡⚡⚡${dud ? '\n⚠️⚠️⚠️ <b>DUDOSA · OJO AL SPREAD</b> ⚠️⚠️⚠️' : ''}\n📏 ${a.name}/USDT · ${a.name} Rango 9h · ${dmy(now)} ${hhmm(now)}\nPrecio ${fx(live.c)} · ya ${dir === 1 ? 'por encima del maximo' : 'por debajo del minimo'} ${fx(lvl, live.c)} (${fx(Math.abs(live.c - lvl), live.c)} pts): si la vela de las ${hhmm(live.ct + 1)} cierra asi, entra\n${a.name} Rango 9h: ${fx(r.lo, live.c)} - ${fx(r.hi, live.c)}\nSi una vela de 5 min cierra ${dir === 1 ? 'por encima de' : 'por debajo de'} ${fx(lvl, live.c)} → ${dir === 1 ? '🟢 LONG' : '🔴 SHORT'}\n${planBlock(lvl, p.tp, p.sl, m, dir, lv)}\n${m.txt}\n${pathLines(dir, lvl, p.tp, p.sl, lv)}\n<i>La entrada real sera el cierre de la vela que rompa; los importes son aproximados.</i>`);
     }
     return;
   }
@@ -261,7 +276,7 @@ async function processAsset(a, st, trades, now, rate) {
   const dud = Math.abs(e - (dir === 1 ? r.hi : r.lo)) < m.sp;
   trades.list.push({ asset: a.name, day: today, dir, e, sl, tp, t_entry: b.t, tpUsd: +m.tpUsd.toFixed(2), slUsd: +m.slUsd.toFixed(2), dudosa: dud, conveniencia: an.conv, res: null });
   const head = dir === 1 ? '🟢🟢🟢 <b>LONG</b> 🟢🟢🟢' : '🔴🔴🔴 <b>SHORT</b> 🔴🔴🔴';
-  await telegram(`${head}${dud ? '\n⚠️⚠️⚠️ <b>DUDOSA · OJO AL SPREAD</b> ⚠️⚠️⚠️' : ''}\n📏 ${a.bin} · ${a.name} Rango 9h · ${dmy(b.ct)} ${hhmm(b.ct + 1)}\n${a.name} Rango 9h: ${fx(r.lo, e)} - ${fx(r.hi, e)}\n${planBlock(e, tp, sl, m)}\n${riskLine(m.slD, m.tpD)}\n${m.txt}\n${an.text}\n\n<i>Rango 9h · senal educativa, no es asesoramiento financiero</i>`);
+  await telegram(`${head}${dud ? '\n⚠️⚠️⚠️ <b>DUDOSA · OJO AL SPREAD</b> ⚠️⚠️⚠️' : ''}\n📏 ${a.bin} · ${a.name} Rango 9h · ${dmy(b.ct)} ${hhmm(b.ct + 1)}\n${a.name} Rango 9h: ${fx(r.lo, e)} - ${fx(r.hi, e)}\n${planBlock(e, tp, sl, m, dir, an.lv)}\n${riskLine(m.slD, m.tpD)}\n${m.txt}\n${an.text}\n\n<i>Rango 9h · senal educativa, no es asesoramiento financiero</i>`);
 }
 
 // resumen diario (tras el cierre por hora) con el acumulado desde el inicio
@@ -328,4 +343,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch((e) => { console.error(e); process.exit(1); });
-module.exports = { summaryText, slTp, rangeOf, analyze, dayKey, loc, ASSETS, processAsset, moneyLines };
+module.exports = { summaryText, slTp, rangeOf, analyze, dayKey, loc, ASSETS, processAsset, moneyLines, planBlock };
