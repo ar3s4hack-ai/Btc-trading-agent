@@ -210,7 +210,7 @@ async function closeTrade(a, tr, trades, px, t, kind, rate) {
   const move = tr.dir * (px - tr.e), net = move - 2 * sp;
   const pnl = kind === 'TP' ? tr.tpUsd : kind === 'SL' ? -tr.slUsd : POSITION_USD * net / tr.e;
   const before = trades.balance;
-  tr.res = kind; tr.t_close = t; tr.px_close = px; tr.pnl = +pnl.toFixed(2);
+  tr.res = kind; tr.t_close = t; tr.px_close = px; tr.pnl = +pnl.toFixed(2); tr.r = tr.slUsd ? +(pnl / tr.slUsd).toFixed(2) : 0;
   trades.balance = +(before + tr.pnl).toFixed(2);
   const head = kind === 'TIME' ? '⏰' : kind === 'TP' ? '✅' : '❌';
   const what = kind === 'TIME' ? `CIERRE POR HORA · <b>${pnl >= 0 ? 'ganancia' : 'perdida'}</b>` : kind === 'TP' ? '<b>TP alcanzado · ganada</b>' : '<b>SL alcanzado · perdida</b>';
@@ -264,6 +264,25 @@ async function processAsset(a, st, trades, now, rate) {
   await telegram(`${head}${dud ? '\n⚠️⚠️⚠️ <b>DUDOSA · OJO AL SPREAD</b> ⚠️⚠️⚠️' : ''}\n📏 ${a.bin} · ${a.name} Rango 9h · ${dmy(b.ct)} ${hhmm(b.ct + 1)}\n${a.name} Rango 9h: ${fx(r.lo, e)} - ${fx(r.hi, e)}\n${planBlock(e, tp, sl, m)}\n${riskLine(m.slD, m.tpD)}\n${m.txt}\n${an.text}\n\n<i>Rango 9h · senal educativa, no es asesoramiento financiero</i>`);
 }
 
+// resumen diario (tras el cierre por hora) con el acumulado desde el inicio
+function summaryText(trades, st, day) {
+  const fm = (x) => x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const closed = trades.list.filter((x) => x.res);
+  const stats = (L) => { const tp = L.filter((x) => x.res === 'TP').length, sl = L.filter((x) => x.res === 'SL').length, tm = L.filter((x) => x.res === 'TIME');
+    const won = L.filter((x) => x.pnl > 0).length, pnl = L.reduce((a, x) => a + (x.pnl || 0), 0), R = L.reduce((a, x) => a + (x.r || 0), 0);
+    return { n: L.length, tp, sl, tm: tm.length, tmWon: tm.filter((x) => x.pnl > 0).length, won, pnl, R }; };
+  const today = closed.filter((x) => x.day === day), d = stats(today), all = stats(closed);
+  const icon = { TP: '✅', SL: '❌', TIME: '⏰' };
+  const lines = today.map((x) => `${icon[x.res]} ${x.asset} ${x.dir === 1 ? 'LONG' : 'SHORT'} ${money(x.pnl)} (${x.r >= 0 ? '+' : ''}${(x.r || 0).toFixed(2)}R)`);
+  const sin = ASSETS.filter((a) => !today.some((x) => x.asset === a.name)).map((a) => { const n = st.assets[a.name]?.note; return `${a.name}${n ? ' (' + n.split(':')[0] + ')' : ''}`; });
+  const pc = (a, b) => (b ? Math.round(100 * a / b) : 0);
+  const [y, mo, dd] = day.split('-');
+  return `📊 <b>Resumen Rango 9h · ${dd}/${mo}/${y}</b>\n` +
+    (d.n ? `Hoy: ${d.n} operaciones · ✅ TP ${d.tp} · ❌ SL ${d.sl} · ⏰ hora ${d.tm} (${d.tmWon} en positivo)\n${lines.join('\n')}\n💰 Hoy ${money(d.pnl)} · ${d.R >= 0 ? '+' : ''}${d.R.toFixed(2)}R` : 'Hoy: sin operaciones') +
+    (sin.length ? `\nSin señal: ${sin.join(', ')}` : '') +
+    `\n\n📈 <b>Acumulado desde ${trades.start || dmy(Date.now())}</b>: ${all.n} operaciones\n✅ TP ${all.tp} · ❌ SL ${all.sl} · ⏰ hora ${all.tm} (${all.tmWon} en positivo)\nGanadas ${all.won}/${all.n} (${pc(all.won, all.n)} %) · TP limpios ${pc(all.tp, all.n)} %\nR total ${all.R >= 0 ? '+' : ''}${all.R.toFixed(2)}R · ${money(all.pnl)} · saldo ${fm(trades.balance)}$`;
+}
+
 function pushState(msg) {
   if (!process.env.GITHUB_ACTIONS) return;
   try {
@@ -286,12 +305,15 @@ async function main() {
   const t0 = Date.now(); let lastPush = Date.now();
   const hello = () => telegram(`✅ <b>Agente Rango 9h activado</b>\nActivos: ${ASSETS.map((x) => x.name).join(', ')}\nCartera simulada: $${CAPITAL} · poder $${POSITION_USD} por operacion\nRango 09:00-10:00 (UTC+2) · entradas de 10:00 a 22:00, lunes a viernes · cierre por hora 22:50`);
   if (first) await hello();
+  trades.start ||= dmy(Date.now());
   let rate = null, rateT = 0;
   do {
     const now = Date.now();
     if (now - rateT > 30 * 60e3) { rate = (await eurusd()) || rate; rateT = now; }
     for (const a of ASSETS) await processAsset(a, st, trades, now, rate);
     st.updated = new Date(now).toISOString();
+    { const l = loc(now), dk = dayKey(now);   // resumen del dia, una vez cerradas las operaciones de hoy
+      if (l.dow !== 0 && l.dow !== 6 && minOfDay(now) >= TIME_EXIT_MIN + 2 && st.sumDay !== dk && !trades.list.some((x) => x.day === dk && !x.res)) { st.sumDay = dk; await telegram(summaryText(trades, st, dk)); } }
     if (DAEMON && !st.tgOk && process.env.TELEGRAM_BOT_TOKEN && (await hello())) st.tgOk = true;   // aviso de activacion en cuanto Telegram funcione
     saveJSON(STATE, st); saveJSON(TRADES, trades);
     if (Date.now() - lastPush > PUSH_EVERY_MIN * 60e3) { pushState('chore: estado rango9h'); lastPush = Date.now(); }
@@ -306,4 +328,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch((e) => { console.error(e); process.exit(1); });
-module.exports = { slTp, rangeOf, analyze, dayKey, loc, ASSETS, processAsset, moneyLines };
+module.exports = { summaryText, slTp, rangeOf, analyze, dayKey, loc, ASSETS, processAsset, moneyLines };
