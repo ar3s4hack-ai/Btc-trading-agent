@@ -72,14 +72,15 @@ async function findChat(token) {   // sin TELEGRAM_CHAT_ID: usa el ultimo chat q
 }
 async function telegram(text) {
   const token = process.env.TELEGRAM_BOT_TOKEN; const chat = CHAT || (token ? await findChat(token) : null);
-  if (!token || !chat) { console.log('[telegram omitido]\n' + text.replace(/<[^>]+>/g, '') + '\n'); return; }
+  if (!token || !chat) { console.log('[telegram omitido]' + (token ? ' (escribe al bot para detectar el chat)' : '') + '\n' + text.replace(/<[^>]+>/g, '') + '\n'); return false; }
   try {
     const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: chat, text, parse_mode: 'HTML', disable_web_page_preview: true }),
     });
-    if (!res.ok) console.error('telegram:', res.status, await res.text());
-  } catch (e) { console.error('telegram:', e.message); }
+    if (!res.ok) { console.error('telegram:', res.status, await res.text()); return false; }
+    return true;
+  } catch (e) { console.error('telegram:', e.message); return false; }
 }
 
 // ---------------- datos (Binance publico; KuCoin de respaldo) ----------------
@@ -279,17 +280,19 @@ function nextWait() { const now = Date.now(), toClose = 300e3 - (now % 300e3) + 
 async function main() {
   if (DATA !== REPO_DATA) for (const f of ['rango9h-state.json', 'rango9h-trades.json'])   // primera vez en el volumen: copia el estado del repo
     if (!fs.existsSync(path.join(DATA, f)) && fs.existsSync(path.join(REPO_DATA, f))) { fs.mkdirSync(DATA, { recursive: true }); fs.copyFileSync(path.join(REPO_DATA, f), path.join(DATA, f)); }
-  const first = !fs.existsSync(STATE) || (DAEMON && !loadJSON(STATE, {}).daemon);
+  const first = !DAEMON && !fs.existsSync(STATE);
   const st = loadJSON(STATE, { assets: {} });
   const trades = loadJSON(TRADES, null) || { capital: CAPITAL, balance: CAPITAL, list: [] };
   const t0 = Date.now(); let lastPush = Date.now();
-  if (first) await telegram(`✅ <b>Agente Rango 9h activado</b>\nActivos: ${ASSETS.map((x) => x.name).join(', ')}\nCartera simulada: $${CAPITAL} · poder $${POSITION_USD} por operacion\nRango 09:00-10:00 (UTC+2) · entradas de 10:00 a 22:00, lunes a viernes · cierre por hora 22:50`);
+  const hello = () => telegram(`✅ <b>Agente Rango 9h activado</b>\nActivos: ${ASSETS.map((x) => x.name).join(', ')}\nCartera simulada: $${CAPITAL} · poder $${POSITION_USD} por operacion\nRango 09:00-10:00 (UTC+2) · entradas de 10:00 a 22:00, lunes a viernes · cierre por hora 22:50`);
+  if (first) await hello();
   let rate = null, rateT = 0;
   do {
     const now = Date.now();
     if (now - rateT > 30 * 60e3) { rate = (await eurusd()) || rate; rateT = now; }
     for (const a of ASSETS) await processAsset(a, st, trades, now, rate);
-    st.updated = new Date(now).toISOString(); if (DAEMON) st.daemon = !!(process.env.TELEGRAM_BOT_TOKEN && CHAT);
+    st.updated = new Date(now).toISOString();
+    if (DAEMON && !st.tgOk && process.env.TELEGRAM_BOT_TOKEN && (await hello())) st.tgOk = true;   // aviso de activacion en cuanto Telegram funcione
     saveJSON(STATE, st); saveJSON(TRADES, trades);
     if (Date.now() - lastPush > PUSH_EVERY_MIN * 60e3) { pushState('chore: estado rango9h'); lastPush = Date.now(); }
     if (DAEMON) { await sleep(nextWait()); continue; }
