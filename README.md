@@ -5,6 +5,7 @@
 - **Regla:** rango 09:00-10:00 (UTC+2 fijo). Desde las 10:00 y hasta las 22:00, la primera vela de 5 min que cierra fuera del rango da la entrada, una al día por activo, de lunes a viernes. Cierre por hora a las 22:50.
 - **SL/TP:** BTC 600/900 puntos (filtro de amplitud del rango 250-600), SOL 0,72/1,62, resto 0,5 % / 1,125 % (ajustado con las señales del bot del 14/10/2026, que cuadran al céntimo a 20.000 $ de poder).
 - **Activos:** BTC, HYPE, TAO, HBAR, UNI, SUI, SOL y LINK (Binance; KuCoin de respaldo).
+- **Anti falsa ruptura:** en BTC solo se entra si la vela que rompe tiene cuerpo ≥ 1,2 × ATR(14) (`IMP_K`); si no, avisa "ruptura descartada". En altcoins marca "RUPTURA DEBIL" si la vela cierra lejos de su extremo. Backtest 1 año BTC: 86 SL → 28 SL, +16 R → +21 R.
 - **Telegram** (secrets `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID`): aviso previo *ROTURA INMINENTE*, la señal con el análisis tipo bot (dudosa por spread, poder/ROI/% del saldo en $ y €, conveniencia, camino al TP, SL protegido, presión con % de compras a mercado, EQH/EQL de 48 h) y el cierre por TP, SL o por hora.
 - **Cartera simulada:** empieza con 500 $ (`CAPITAL`) y cada operación usa 500 $ (`POSITION_USD`); se cambian en `rango9h.yml`. Libro en `data/rango9h-trades.json`.
 - Corre en bucle dentro de Actions (revisa cada minuto) de lunes a viernes.
