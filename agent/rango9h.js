@@ -27,13 +27,15 @@ const POLL_SEC = +(process.env.POLL_SEC || 60);
 const PUSH_EVERY_MIN = 30;
 const TZ_OFF_H = 2;              // UTC+2 fijo todo el ano (como el bot)
 const RANGE_H = 9, ENTRY_END_H = 22;
-const TIME_EXIT_MIN = 22 * 60 + 50;   // cierre por hora a las 22:50
+const TIME_EXIT_MIN = 22 * 60 + 50;
+const IMP_K = +(process.env.IMP_K || 1.2);     // anti falsa ruptura (activos con imp:true): cuerpo de la vela >= IMP_K x ATR(14)
+const WEAK_POS = +(process.env.WEAK_POS || 0.7);                           // ruptura debil: la vela cierra lejos de su extremo   // cierre por hora a las 22:50
 const DEF_SPREAD_PCT = 0.03;     // spread por lado si no se conoce (% del precio)
 // spread por lado deducido de los importes del bot (spread "ya descontado").
 // Ajustado con las senales del 14/10/2026: el bot usa 20.000 $ de poder y $ = poder x (dist -/+ 2 x spread) / entrada.
 //   BTC 600/900 pts y spread ~0 · TAO/HBAR 0,5 % / 1,125 % (TP = 2,25 x SL) · SOL 0,72/1,62 pts
 const ASSETS = [
-  { name: 'BTC',  bin: 'BTCUSDT',  kc: 'BTC-USDT',  mode: 'pts', tp: 900,   sl: 600,  amp: [250, 600], spread: 0 },
+  { name: 'BTC',  bin: 'BTCUSDT',  kc: 'BTC-USDT',  mode: 'pts', tp: 900,   sl: 600,  amp: [250, 600], spread: 0, imp: true },
   { name: 'HYPE', bin: 'HYPEUSDT', kc: 'HYPE-USDT', mode: 'pct', tp: 1.125, sl: 0.5 },
   { name: 'TAO',  bin: 'TAOUSDT',  kc: 'TAO-USDT',  mode: 'pct', tp: 1.125, sl: 0.5, spread: 0.211 },
   { name: 'HBAR', bin: 'HBARUSDT', kc: 'HBAR-USDT', mode: 'pct', tp: 1.125, sl: 0.5, spread: 0.0000377 },
@@ -261,7 +263,7 @@ async function processAsset(a, st, trades, now, rate) {
       s.pre = true; const dir = live.c > r.hi ? 1 : -1; const lvl = dir === 1 ? r.hi : r.lo; const p = slTp(a, lvl, dir);
       const m = moneyLines(a, lvl, p.tp, p.sl, trades.balance, rate); const dud = Math.abs(live.c - lvl) < m.sp;
       const iL = B.length - 1; const lv = eqLevels(B, iL, atr(B));
-      await telegram(`⚡⚡⚡ <b>ROTURA INMINENTE</b> ⚡⚡⚡${dud ? '\n⚠️⚠️⚠️ <b>DUDOSA · OJO AL SPREAD</b> ⚠️⚠️⚠️' : ''}\n📏 ${a.name}/USDT · ${a.name} Rango 9h · ${dmy(now)} ${hhmm(now)}\nPrecio ${fx(live.c)} · ya ${dir === 1 ? 'por encima del maximo' : 'por debajo del minimo'} ${fx(lvl, live.c)} (${fx(Math.abs(live.c - lvl), live.c)} pts): si la vela de las ${hhmm(live.ct + 1)} cierra asi, entra\n${a.name} Rango 9h: ${fx(r.lo, live.c)} - ${fx(r.hi, live.c)}\nSi una vela de 5 min cierra ${dir === 1 ? 'por encima de' : 'por debajo de'} ${fx(lvl, live.c)} → ${dir === 1 ? '🟢 LONG' : '🔴 SHORT'}\n${planBlock(lvl, p.tp, p.sl, m, dir, lv)}\n${m.txt}\n${pathLines(dir, lvl, p.tp, p.sl, lv)}\n<i>La entrada real sera el cierre de la vela que rompa; los importes son aproximados.</i>`);
+      await telegram(`⚡⚡⚡ <b>ROTURA INMINENTE</b> ⚡⚡⚡${dud ? '\n⚠️⚠️⚠️ <b>DUDOSA · OJO AL SPREAD</b> ⚠️⚠️⚠️' : ''}\n📏 ${a.name}/USDT · ${a.name} Rango 9h · ${dmy(now)} ${hhmm(now)}\nPrecio ${fx(live.c)} · ya ${dir === 1 ? 'por encima del maximo' : 'por debajo del minimo'} ${fx(lvl, live.c)} (${fx(Math.abs(live.c - lvl), live.c)} pts): si la vela de las ${hhmm(live.ct + 1)} cierra asi, entra\n${a.name} Rango 9h: ${fx(r.lo, live.c)} - ${fx(r.hi, live.c)}\nSi una vela de 5 min cierra ${dir === 1 ? 'por encima de' : 'por debajo de'} ${fx(lvl, live.c)} → ${dir === 1 ? '🟢 LONG' : '🔴 SHORT'}\n${planBlock(lvl, p.tp, p.sl, m, dir, lv)}\n${m.txt}\n${pathLines(dir, lvl, p.tp, p.sl, lv)}${a.imp ? `\n🧱 Anti falsa ruptura: solo vale si la vela cierra con impulso (cuerpo ≥ ${fx(IMP_K * atr(B)[iL], live.c)} pts)` : ''}\n<i>La entrada real sera el cierre de la vela que rompa; los importes son aproximados.</i>`);
     }
     return;
   }
@@ -271,12 +273,19 @@ async function processAsset(a, st, trades, now, rate) {
   if (now - b.ct > 30 * 60e3) { s.note = 'senal antigua (el agente no estaba activo): no se envia'; return; }
   const { sl, tp } = slTp(a, e, dir);
   const iFull = B.findIndex((x) => x.t === b.t);
+  const atrB = atr(B)[iFull], body = dir * (b.c - b.o);
+  if (a.imp && body < IMP_K * atrB) {
+    s.note = 'descartada: vela sin impulso';
+    await telegram(`🚫 <b>${a.name} · ruptura descartada</b> (anti falsa ruptura)\n📏 ${a.bin} · ${a.name} Rango 9h · ${dmy(b.ct)} ${hhmm(b.ct + 1)}\nLa vela ${dir === 1 ? 'cierra por encima del maximo' : 'cierra por debajo del minimo'} en ${fx(e)} pero sin impulso: cuerpo ${fx(Math.max(body, 0), e)} pts < ${IMP_K} x ATR (${fx(IMP_K * atrB, e)} pts).\nNo se entra hoy en ${a.name}.`);
+    return;
+  }
+  const hlB = b.h - b.l, weak = !a.imp && hlB > 0 && (dir === 1 ? (b.c - b.l) / hlB : (b.h - b.c) / hlB) < WEAK_POS;
   const m = moneyLines(a, e, tp, sl, trades.balance, rate);
   const an = analyze(a, B, iFull, dir, e, sl, tp);
   const dud = Math.abs(e - (dir === 1 ? r.hi : r.lo)) < m.sp;
-  trades.list.push({ asset: a.name, day: today, dir, e, sl, tp, t_entry: b.t, tpUsd: +m.tpUsd.toFixed(2), slUsd: +m.slUsd.toFixed(2), dudosa: dud, conveniencia: an.conv, res: null });
+  trades.list.push({ asset: a.name, day: today, dir, e, sl, tp, t_entry: b.t, tpUsd: +m.tpUsd.toFixed(2), slUsd: +m.slUsd.toFixed(2), dudosa: dud, debil: weak, conveniencia: an.conv, res: null });
   const head = dir === 1 ? '🟢🟢🟢 <b>LONG</b> 🟢🟢🟢' : '🔴🔴🔴 <b>SHORT</b> 🔴🔴🔴';
-  await telegram(`${head}${dud ? '\n⚠️⚠️⚠️ <b>DUDOSA · OJO AL SPREAD</b> ⚠️⚠️⚠️' : ''}\n📏 ${a.bin} · ${a.name} Rango 9h · ${dmy(b.ct)} ${hhmm(b.ct + 1)}\n${a.name} Rango 9h: ${fx(r.lo, e)} - ${fx(r.hi, e)}\n${planBlock(e, tp, sl, m, dir, an.lv)}\n${riskLine(m.slD, m.tpD)}\n${m.txt}\n${an.text}\n\n<i>Rango 9h · senal educativa, no es asesoramiento financiero</i>`);
+  await telegram(`${head}${dud ? '\n⚠️⚠️⚠️ <b>DUDOSA · OJO AL SPREAD</b> ⚠️⚠️⚠️' : ''}${weak ? '\n⚠️ <b>RUPTURA DEBIL</b>: la vela cierra lejos de su extremo (mecha de rechazo); mas riesgo de falsa ruptura' : ''}\n📏 ${a.bin} · ${a.name} Rango 9h · ${dmy(b.ct)} ${hhmm(b.ct + 1)}\n${a.name} Rango 9h: ${fx(r.lo, e)} - ${fx(r.hi, e)}\n${planBlock(e, tp, sl, m, dir, an.lv)}\n${riskLine(m.slD, m.tpD)}\n${m.txt}\n${an.text}\n\n<i>Rango 9h · senal educativa, no es asesoramiento financiero</i>`);
 }
 
 // resumen diario (tras el cierre por hora) con el acumulado desde el inicio
