@@ -29,13 +29,16 @@ const TZ_OFF_H = 2;              // UTC+2 fijo todo el ano (como el bot)
 const RANGE_H = 9, ENTRY_END_H = 22;
 const TIME_EXIT_MIN = 22 * 60 + 50;
 const IMP_K = +(process.env.IMP_K || 1.2);     // anti falsa ruptura (activos con imp:true): cuerpo de la vela >= IMP_K x ATR(14)
-const WEAK_POS = +(process.env.WEAK_POS || 0.7);                           // ruptura debil: la vela cierra lejos de su extremo   // cierre por hora a las 22:50
+const WEAK_POS = +(process.env.WEAK_POS || 0.7);   // ruptura debil: la vela cierra lejos de su extremo
+// filtro de tendencia (backtest 1 ano, 5m, L-V, cierre 22:50): BTC ADX 5m >= 20 -> +16R a +30R; altcoins Supertrend 1h a favor + ADX 1h >= 20 -> -46R a +90R
+const TREND_ON = process.env.TREND_FILTER !== '0';
+const ADX_BTC = +(process.env.ADX_BTC || 20), ADX_ALT = +(process.env.ADX_ALT || 20), ST_FAC = +(process.env.ST_FAC || 2.5);
 const DEF_SPREAD_PCT = 0.03;     // spread por lado si no se conoce (% del precio)
 // spread por lado deducido de los importes del bot (spread "ya descontado").
 // Ajustado con las senales del 14/10/2026: el bot usa 20.000 $ de poder y $ = poder x (dist -/+ 2 x spread) / entrada.
 //   BTC 600/900 pts y spread ~0 · TAO/HBAR 0,5 % / 1,125 % (TP = 2,25 x SL) · SOL 0,72/1,62 pts
 const ASSETS = [
-  { name: 'BTC',  bin: 'BTCUSDT',  kc: 'BTC-USDT',  mode: 'pts', tp: 900,   sl: 600,  amp: [250, 600], spread: 0, imp: true },
+  { name: 'BTC',  bin: 'BTCUSDT',  kc: 'BTC-USDT',  mode: 'pts', tp: 900,   sl: 600,  amp: [250, 600], spread: 0, trend: 'adx5' },
   { name: 'HYPE', bin: 'HYPEUSDT', kc: 'HYPE-USDT', mode: 'pct', tp: 1.125, sl: 0.5 },
   { name: 'TAO',  bin: 'TAOUSDT',  kc: 'TAO-USDT',  mode: 'pct', tp: 1.125, sl: 0.5, spread: 0.211 },
   { name: 'HBAR', bin: 'HBARUSDT', kc: 'HBAR-USDT', mode: 'pct', tp: 1.125, sl: 0.5, spread: 0.0000377 },
@@ -89,13 +92,14 @@ async function telegram(text) {
 
 // ---------------- datos (Binance publico; KuCoin de respaldo) ----------------
 async function getJSON(url) { const r = await fetch(url, { headers: { 'user-agent': 'rango9h-agent' } }); if (!r.ok) throw new Error(r.status + ' ' + url); return r.json(); }
-async function klines(a, limit = 700) {
+async function klines(a, limit = 700, tf = '5m') {
   for (const host of ['https://data-api.binance.vision', 'https://api.binance.com']) {
     try {
-      const rows = await getJSON(`${host}/api/v3/klines?symbol=${a.bin}&interval=5m&limit=${Math.min(limit, 1000)}`);
+      const rows = await getJSON(`${host}/api/v3/klines?symbol=${a.bin}&interval=${tf}&limit=${Math.min(limit, 1000)}`);
       if (rows.length) { if (!klines.src) console.log('datos desde', (klines.src = host)); return rows.map((k) => ({ t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5], ct: k[6], tb: k[9] != null ? +k[9] : null })); }
     } catch (e) { /* siguiente fuente */ }
   }
+  if (tf !== '5m') throw new Error('sin datos ' + tf);
   const end = Math.floor(Date.now() / 1000), start = end - limit * 300;
   if (klines.src !== 'kucoin') console.log('datos desde', (klines.src = 'kucoin'));
   const j = await getJSON(`https://api.kucoin.com/api/v1/market/candles?type=5min&symbol=${a.kc}&startAt=${start}&endAt=${end}`);
@@ -112,6 +116,38 @@ async function eurusd() {
 function ema(vals, n) { const out = []; const k = 2 / (n + 1); vals.forEach((v, i) => out.push(i ? out[i - 1] + (v - out[i - 1]) * k : v)); return out; }
 function rsi(vals, n = 14) { const out = []; let ag = 0, al = 0; for (let i = 0; i < vals.length; i++) { const ch = i ? vals[i] - vals[i - 1] : 0, g = Math.max(ch, 0), l = Math.max(-ch, 0); if (i <= n) { ag += g / n; al += l / n; } else { ag = (ag * (n - 1) + g) / n; al = (al * (n - 1) + l) / n; } out.push(i < n ? 50 : al === 0 ? 100 : 100 - 100 / (1 + ag / al)); } return out; }
 function atr(B, n = 14) { const out = []; for (let i = 0; i < B.length; i++) { const tr = i ? Math.max(B[i].h - B[i].l, Math.abs(B[i].h - B[i - 1].c), Math.abs(B[i].l - B[i - 1].c)) : B[i].h - B[i].l; out.push(i < n ? tr : (out[i - 1] * (n - 1) + tr) / n); } return out; }
+// Supertrend (hl2, ATR RMA 14) + ADX(14) como en el backtest; dir -1 = alcista, 1 = bajista
+function stAdx(H, fac = ST_FAC) {
+  const n = H.length, dir = new Array(n).fill(1), adx = new Array(n).fill(NaN);
+  let at = 0, up = 0, dn = 0, st = 0, sTR = 0, sP = 0, sM = 0, ax = 0;
+  for (let i = 0; i < n; i++) {
+    const b = H[i], pc = i ? H[i - 1].c : b.c, tr = i ? Math.max(b.h - b.l, Math.abs(b.h - pc), Math.abs(b.l - pc)) : b.h - b.l;
+    at = i < 14 ? (at * i + tr) / (i + 1) : (at * 13 + tr) / 14;
+    const src = (b.h + b.l) / 2; let u = src - fac * at, d = src + fac * at;
+    if (i) { u = pc > up ? Math.max(u, up) : u; d = pc < dn ? Math.min(d, dn) : d; }
+    const dr = i === 0 ? 1 : st === dn ? (b.c > d ? -1 : 1) : (b.c < u ? 1 : -1);
+    up = u; dn = d; st = dr === -1 ? u : d; dir[i] = dr;
+    if (i) { const pm = b.h - H[i - 1].h, mm = H[i - 1].l - b.l, p = pm > mm && pm > 0 ? pm : 0, m = mm > pm && mm > 0 ? mm : 0;
+      sTR = i <= 14 ? sTR + tr : sTR - sTR / 14 + tr; sP = i <= 14 ? sP + p : sP - sP / 14 + p; sM = i <= 14 ? sM + m : sM - sM / 14 + m;
+      if (i >= 14 && sTR > 0) { const dp = 100 * sP / sTR, dm = 100 * sM / sTR, dx = dp + dm > 0 ? 100 * Math.abs(dp - dm) / (dp + dm) : 0; ax = i < 28 ? (ax * (i - 14) + dx) / (i - 13) : (ax * 13 + dx) / 14; if (i >= 28) adx[i] = ax; } }
+  }
+  return { dir, adx };
+}
+// estado del filtro de tendencia en el momento t (BTC: ADX 5m de la vela iB; altcoins: ultima hora cerrada)
+async function trendCheck(a, B, iB, dir, t) {
+  if (!TREND_ON) return { ok: true, txt: '' };
+  if (a.trend === 'adx5') {
+    const ax = stAdx(B.slice(0, iB + 1)).adx[iB];
+    const ok = isFinite(ax) && ax >= ADX_BTC;
+    return { ok, txt: `ADX 5m ${isFinite(ax) ? ax.toFixed(0) : '-'} ${ok ? '≥' : '<'} ${ADX_BTC}` };
+  }
+  let H;
+  try { H = (await klines(a, 300, '1h')).filter((x) => x.ct < t); } catch (e) { return { ok: true, txt: 'filtro 1h sin datos (no se aplica)' }; }
+  if (H.length < 40) return { ok: true, txt: 'filtro 1h sin datos (no se aplica)' };
+  const r = stAdx(H), k = H.length - 1, stOk = r.dir[k] === -dir, ax = r.adx[k], adxOk = isFinite(ax) && ax >= ADX_ALT;
+  return { ok: stOk && adxOk, txt: `Supertrend 1h ${r.dir[k] === -1 ? 'alcista' : 'bajista'} ${stOk ? '✓' : '✗'} · ADX 1h ${isFinite(ax) ? ax.toFixed(0) : '-'} ${adxOk ? '✓' : '✗'}` };
+}
+
 function pivots(B, upto, n = 5) { // pivotes confirmados hasta la vela 'upto'
   const hi = [], lo = [];
   for (let c = n; c <= upto - n; c++) {
@@ -262,8 +298,8 @@ async function processAsset(a, st, trades, now, rate) {
     if (!s.pre && l.h >= RANGE_H + 1 && l.h < ENTRY_END_H && live.ct >= now && (live.c > r.hi || live.c < r.lo)) {
       s.pre = true; const dir = live.c > r.hi ? 1 : -1; const lvl = dir === 1 ? r.hi : r.lo; const p = slTp(a, lvl, dir);
       const m = moneyLines(a, lvl, p.tp, p.sl, trades.balance, rate); const dud = Math.abs(live.c - lvl) < m.sp;
-      const iL = B.length - 1; const lv = eqLevels(B, iL, atr(B));
-      await telegram(`⚡⚡⚡ <b>ROTURA INMINENTE</b> ⚡⚡⚡${dud ? '\n⚠️⚠️⚠️ <b>DUDOSA · OJO AL SPREAD</b> ⚠️⚠️⚠️' : ''}\n📏 ${a.name}/USDT · ${a.name} Rango 9h · ${dmy(now)} ${hhmm(now)}\nPrecio ${fx(live.c)} · ya ${dir === 1 ? 'por encima del maximo' : 'por debajo del minimo'} ${fx(lvl, live.c)} (${fx(Math.abs(live.c - lvl), live.c)} pts): si la vela de las ${hhmm(live.ct + 1)} cierra asi, entra\n${a.name} Rango 9h: ${fx(r.lo, live.c)} - ${fx(r.hi, live.c)}\nSi una vela de 5 min cierra ${dir === 1 ? 'por encima de' : 'por debajo de'} ${fx(lvl, live.c)} → ${dir === 1 ? '🟢 LONG' : '🔴 SHORT'}\n${planBlock(lvl, p.tp, p.sl, m, dir, lv)}\n${m.txt}\n${pathLines(dir, lvl, p.tp, p.sl, lv)}${a.imp ? `\n🧱 Anti falsa ruptura: solo vale si la vela cierra con impulso (cuerpo ≥ ${fx(IMP_K * atr(B)[iL], live.c)} pts)` : ''}\n<i>La entrada real sera el cierre de la vela que rompa; los importes son aproximados.</i>`);
+      const iL = B.length - 1; const lv = eqLevels(B, iL, atr(B)); const tcP = await trendCheck(a, B, iL, dir, now);
+      await telegram(`⚡⚡⚡ <b>ROTURA INMINENTE</b> ⚡⚡⚡${dud ? '\n⚠️⚠️⚠️ <b>DUDOSA · OJO AL SPREAD</b> ⚠️⚠️⚠️' : ''}\n📏 ${a.name}/USDT · ${a.name} Rango 9h · ${dmy(now)} ${hhmm(now)}\nPrecio ${fx(live.c)} · ya ${dir === 1 ? 'por encima del maximo' : 'por debajo del minimo'} ${fx(lvl, live.c)} (${fx(Math.abs(live.c - lvl), live.c)} pts): si la vela de las ${hhmm(live.ct + 1)} cierra asi, entra\n${a.name} Rango 9h: ${fx(r.lo, live.c)} - ${fx(r.hi, live.c)}\nSi una vela de 5 min cierra ${dir === 1 ? 'por encima de' : 'por debajo de'} ${fx(lvl, live.c)} → ${dir === 1 ? '🟢 LONG' : '🔴 SHORT'}\n${planBlock(lvl, p.tp, p.sl, m, dir, lv)}\n${m.txt}\n${pathLines(dir, lvl, p.tp, p.sl, lv)}${a.imp ? `\n🧱 Anti falsa ruptura: solo vale si la vela cierra con impulso (cuerpo ≥ ${fx(IMP_K * atr(B)[iL], live.c)} pts)` : ''}${tcP.txt ? `\n📈 Tendencia ahora: ${tcP.txt}${tcP.ok ? '' : ' → si no cambia, se descartara'}` : ''}\n<i>La entrada real sera el cierre de la vela que rompa; los importes son aproximados.</i>`);
     }
     return;
   }
@@ -279,13 +315,19 @@ async function processAsset(a, st, trades, now, rate) {
     await telegram(`🚫 <b>${a.name} · ruptura descartada</b> (anti falsa ruptura)\n📏 ${a.bin} · ${a.name} Rango 9h · ${dmy(b.ct)} ${hhmm(b.ct + 1)}\nLa vela ${dir === 1 ? 'cierra por encima del maximo' : 'cierra por debajo del minimo'} en ${fx(e)} pero sin impulso: cuerpo ${fx(Math.max(body, 0), e)} pts < ${IMP_K} x ATR (${fx(IMP_K * atrB, e)} pts).\nNo se entra hoy en ${a.name}.`);
     return;
   }
-  const hlB = b.h - b.l, weak = !a.imp && hlB > 0 && (dir === 1 ? (b.c - b.l) / hlB : (b.h - b.c) / hlB) < WEAK_POS;
+  const tc = await trendCheck(a, B, iFull, dir, b.ct + 1);
+  if (!tc.ok) {
+    s.note = 'descartada: sin tendencia';
+    await telegram(`🚫 <b>${a.name} · ruptura descartada</b> (sin tendencia: riesgo de falsa ruptura)\n📏 ${a.bin} · ${a.name} Rango 9h · ${dmy(b.ct)} ${hhmm(b.ct + 1)}\n${dir === 1 ? '🟢 LONG' : '🔴 SHORT'} en ${fx(e)} no cumple el filtro: ${tc.txt}\nNo se entra hoy en ${a.name}.`);
+    return;
+  }
+  const hlB = b.h - b.l, weak = a.trend !== 'adx5' && hlB > 0 && (dir === 1 ? (b.c - b.l) / hlB : (b.h - b.c) / hlB) < WEAK_POS;
   const m = moneyLines(a, e, tp, sl, trades.balance, rate);
   const an = analyze(a, B, iFull, dir, e, sl, tp);
   const dud = Math.abs(e - (dir === 1 ? r.hi : r.lo)) < m.sp;
   trades.list.push({ asset: a.name, day: today, dir, e, sl, tp, t_entry: b.t, tpUsd: +m.tpUsd.toFixed(2), slUsd: +m.slUsd.toFixed(2), dudosa: dud, debil: weak, conveniencia: an.conv, res: null });
   const head = dir === 1 ? '🟢🟢🟢 <b>LONG</b> 🟢🟢🟢' : '🔴🔴🔴 <b>SHORT</b> 🔴🔴🔴';
-  await telegram(`${head}${dud ? '\n⚠️⚠️⚠️ <b>DUDOSA · OJO AL SPREAD</b> ⚠️⚠️⚠️' : ''}${weak ? '\n⚠️ <b>RUPTURA DEBIL</b>: la vela cierra lejos de su extremo (mecha de rechazo); mas riesgo de falsa ruptura' : ''}\n📏 ${a.bin} · ${a.name} Rango 9h · ${dmy(b.ct)} ${hhmm(b.ct + 1)}\n${a.name} Rango 9h: ${fx(r.lo, e)} - ${fx(r.hi, e)}\n${planBlock(e, tp, sl, m, dir, an.lv)}\n${riskLine(m.slD, m.tpD)}\n${m.txt}\n${an.text}\n\n<i>Rango 9h · senal educativa, no es asesoramiento financiero</i>`);
+  await telegram(`${head}${dud ? '\n⚠️⚠️⚠️ <b>DUDOSA · OJO AL SPREAD</b> ⚠️⚠️⚠️' : ''}${weak ? '\n⚠️ <b>RUPTURA DEBIL</b>: la vela cierra lejos de su extremo (mecha de rechazo); mas riesgo de falsa ruptura' : ''}\n📏 ${a.bin} · ${a.name} Rango 9h · ${dmy(b.ct)} ${hhmm(b.ct + 1)}\n${a.name} Rango 9h: ${fx(r.lo, e)} - ${fx(r.hi, e)}\n${planBlock(e, tp, sl, m, dir, an.lv)}\n${riskLine(m.slD, m.tpD)}${tc.txt ? `\n📈 Tendencia: ${tc.txt}` : ''}\n${m.txt}\n${an.text}\n\n<i>Rango 9h · senal educativa, no es asesoramiento financiero</i>`);
 }
 
 // resumen diario (tras el cierre por hora) con el acumulado desde el inicio
