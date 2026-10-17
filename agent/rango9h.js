@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* Agente "Rango 9h" (rotura del rango 09:00-10:00 con TP/SL fijos).
+/* Agente "Rango 9h": rotura del rango 09:00-10:00 con TP/SL fijos.
    Regla: rango 09:00-10:00 (UTC+2 fijo, como el bot). Desde las 10:00 y hasta las 22:00,
    la primera vela de 5 min que CIERRA fuera del rango da la entrada (una al dia por activo).
    SL/TP: BTC 600/900 puntos, SOL 0.72/1.62, resto 0.5% / 1.125%. Filtro de amplitud
