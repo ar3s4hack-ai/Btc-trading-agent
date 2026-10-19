@@ -32,6 +32,7 @@ const IMP_K = +(process.env.IMP_K || 1.2);     // anti falsa ruptura (activos co
 const WEAK_POS = +(process.env.WEAK_POS || 0.7);   // ruptura debil: la vela cierra lejos de su extremo
 // filtro de tendencia (backtest 1 ano, 5m, L-V, cierre 22:50): BTC ADX 5m >= 20 -> +16R a +30R; altcoins Supertrend 1h a favor + ADX 1h >= 20 -> -46R a +90R
 const TREND_ON = process.env.TREND_FILTER !== '0';
+const TREND_MODE = (process.env.TREND_MODE || 'aviso').toLowerCase();   // aviso: la senal sale marcada CONTRA TENDENCIA (fuera de la cartera) | bloquear: no se envia
 const ADX_BTC = +(process.env.ADX_BTC || 20), ADX_ALT = +(process.env.ADX_ALT || 20), ST_FAC = +(process.env.ST_FAC || 2.5);
 const DEF_SPREAD_PCT = 0.03;     // spread por lado si no se conoce (% del precio)
 // spread por lado deducido de los importes del bot (spread "ya descontado").
@@ -264,10 +265,10 @@ async function closeTrade(a, tr, trades, px, t, kind, rate) {
   const pnl = kind === 'TP' ? tr.tpUsd : kind === 'SL' ? -tr.slUsd : POSITION_USD * net / tr.e;
   const before = trades.balance;
   tr.res = kind; tr.t_close = t; tr.px_close = px; tr.pnl = +pnl.toFixed(2); tr.r = tr.slUsd ? +(pnl / tr.slUsd).toFixed(2) : 0;
-  trades.balance = +(before + tr.pnl).toFixed(2);
+  if (!tr.contra) trades.balance = +(before + tr.pnl).toFixed(2);
   const head = kind === 'TIME' ? '⏰' : kind === 'TP' ? '✅' : '❌';
   const what = kind === 'TIME' ? `CIERRE POR HORA · <b>${pnl >= 0 ? 'ganancia' : 'perdida'}</b>` : kind === 'TP' ? '<b>GANADA</b>' : '<b>PERDIDA</b>';
-  await telegram(`${head} ${a.bin} · ${a.name} Rango 9h · ${dmy(tr.t_entry)} ${hhmm(tr.t_entry + 300000)}\n${what} a las ${hhmm(t)}\n${tr.dir === 1 ? 'LONG' : 'SHORT'} desde ${fx(tr.e)} → ${sgn(move)}${fx(Math.abs(move), tr.e)} pts (neto ${sgn(net)}${fx(Math.abs(net), tr.e)} tras spread)\n💰 ${money(pnl)}${eur(pnl, rate)} · ROI ${pct(pnl / POSITION_USD * 100)} · ${pct(pnl / before * 100)} del saldo · saldo ${trades.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}$${rate ? ` (${(trades.balance / rate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€)` : ''}${tr.dudosa_cierre ? '\n<i>La vela toco TP y SL: se cuenta como SL</i>' : ''}`);
+  await telegram(`${head} ${a.bin} · ${a.name} Rango 9h · ${dmy(tr.t_entry)} ${hhmm(tr.t_entry + 300000)}\n${what} a las ${hhmm(t)}${tr.contra ? ' · <i>contra tendencia (fuera de la cartera)</i>' : ''}\n${tr.dir === 1 ? 'LONG' : 'SHORT'} desde ${fx(tr.e)} → ${sgn(move)}${fx(Math.abs(move), tr.e)} pts (neto ${sgn(net)}${fx(Math.abs(net), tr.e)} tras spread)\n💰 ${money(pnl)}${eur(pnl, rate)} · ROI ${pct(pnl / POSITION_USD * 100)} · ${pct(pnl / before * 100)} del saldo · saldo ${trades.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}$${rate ? ` (${(trades.balance / rate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€)` : ''}${tr.dudosa_cierre ? '\n<i>La vela toco TP y SL: se cuenta como SL</i>' : ''}`);
 }
 
 async function processAsset(a, st, trades, now, rate) {
@@ -316,7 +317,8 @@ async function processAsset(a, st, trades, now, rate) {
     return;
   }
   const tc = await trendCheck(a, B, iFull, dir, b.ct + 1);
-  if (!tc.ok) {
+  const contra = !tc.ok && TREND_MODE !== 'bloquear';
+  if (!tc.ok && !contra) {
     s.note = 'descartada: sin tendencia';
     await telegram(`🚫 <b>${a.name} · ruptura descartada</b> (sin tendencia: riesgo de falsa ruptura)\n📏 ${a.bin} · ${a.name} Rango 9h · ${dmy(b.ct)} ${hhmm(b.ct + 1)}\n${dir === 1 ? '🟢 LONG' : '🔴 SHORT'} en ${fx(e)} no cumple el filtro: ${tc.txt}\nNo se entra hoy en ${a.name}.`);
     return;
@@ -325,28 +327,30 @@ async function processAsset(a, st, trades, now, rate) {
   const m = moneyLines(a, e, tp, sl, trades.balance, rate);
   const an = analyze(a, B, iFull, dir, e, sl, tp);
   const dud = Math.abs(e - (dir === 1 ? r.hi : r.lo)) < m.sp;
-  trades.list.push({ asset: a.name, day: today, dir, e, sl, tp, t_entry: b.t, tpUsd: +m.tpUsd.toFixed(2), slUsd: +m.slUsd.toFixed(2), dudosa: dud, debil: weak, conveniencia: an.conv, res: null });
+  trades.list.push({ asset: a.name, day: today, dir, e, sl, tp, t_entry: b.t, tpUsd: +m.tpUsd.toFixed(2), slUsd: +m.slUsd.toFixed(2), dudosa: dud, debil: weak, contra, conveniencia: an.conv, res: null });
   const head = dir === 1 ? '🟢🟢🟢 <b>LONG</b> 🟢🟢🟢' : '🔴🔴🔴 <b>SHORT</b> 🔴🔴🔴';
-  await telegram(`${head}${dud ? '\n⚠️⚠️⚠️ <b>DUDOSA · OJO AL SPREAD</b> ⚠️⚠️⚠️' : ''}${weak ? '\n⚠️ <b>RUPTURA DEBIL</b>: la vela cierra lejos de su extremo (mecha de rechazo); mas riesgo de falsa ruptura' : ''}\n📏 ${a.bin} · ${a.name} Rango 9h · ${dmy(b.ct)} ${hhmm(b.ct + 1)}\n${a.name} Rango 9h: ${fx(r.lo, e)} - ${fx(r.hi, e)}\n${planBlock(e, tp, sl, m, dir, an.lv)}\n${riskLine(m.slD, m.tpD)}${tc.txt ? `\n📈 Tendencia: ${tc.txt}` : ''}\n${m.txt}\n${an.text}\n\n<i>Rango 9h · senal educativa, no es asesoramiento financiero</i>`);
+  await telegram(`${head}${contra ? `\n⚠️⚠️ <b>CONTRA TENDENCIA</b> ⚠️⚠️\nNo pasa el filtro (${tc.txt}). En 1 año estas señales perdieron en conjunto: entra con menos tamaño o no entres. Va fuera de la cartera simulada.` : ''}${dud ? '\n⚠️⚠️⚠️ <b>DUDOSA · OJO AL SPREAD</b> ⚠️⚠️⚠️' : ''}${weak ? '\n⚠️ <b>RUPTURA DEBIL</b>: la vela cierra lejos de su extremo (mecha de rechazo); mas riesgo de falsa ruptura' : ''}\n📏 ${a.bin} · ${a.name} Rango 9h · ${dmy(b.ct)} ${hhmm(b.ct + 1)}\n${a.name} Rango 9h: ${fx(r.lo, e)} - ${fx(r.hi, e)}\n${planBlock(e, tp, sl, m, dir, an.lv)}\n${riskLine(m.slD, m.tpD)}${tc.txt ? `\n📈 Tendencia: ${tc.txt}` : ''}\n${m.txt}\n${an.text}\n\n<i>Rango 9h · senal educativa, no es asesoramiento financiero</i>`);
 }
 
 // resumen diario (tras el cierre por hora) con el acumulado desde el inicio
 function summaryText(trades, st, day) {
   const fm = (x) => x.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const closed = trades.list.filter((x) => x.res);
+  const closedAll = trades.list.filter((x) => x.res), closed = closedAll.filter((x) => !x.contra), contraL = closedAll.filter((x) => x.contra);
   const stats = (L) => { const tp = L.filter((x) => x.res === 'TP').length, sl = L.filter((x) => x.res === 'SL').length, tm = L.filter((x) => x.res === 'TIME');
     const won = L.filter((x) => x.pnl > 0).length, pnl = L.reduce((a, x) => a + (x.pnl || 0), 0), R = L.reduce((a, x) => a + (x.r || 0), 0);
     return { n: L.length, tp, sl, tm: tm.length, tmWon: tm.filter((x) => x.pnl > 0).length, won, pnl, R }; };
-  const today = closed.filter((x) => x.day === day), d = stats(today), all = stats(closed);
+  const today = closed.filter((x) => x.day === day), d = stats(today), all = stats(closed), cT = contraL.filter((x) => x.day === day), ca = stats(contraL);
   const icon = { TP: '✅', SL: '❌', TIME: '⏰' };
   const lines = today.map((x) => `${icon[x.res]} ${x.asset} ${x.dir === 1 ? 'LONG' : 'SHORT'} ${money(x.pnl)} (${x.r >= 0 ? '+' : ''}${(x.r || 0).toFixed(2)}R)`);
-  const sin = ASSETS.filter((a) => !today.some((x) => x.asset === a.name)).map((a) => { const n = st.assets[a.name]?.note; return `${a.name}${n ? ' (' + n.split(':')[0] + ')' : ''}`; });
+  const sin = ASSETS.filter((a) => !closedAll.some((x) => x.day === day && x.asset === a.name)).map((a) => { const n = st.assets[a.name]?.note; return `${a.name}${n ? ' (' + n.split(':')[0] + ')' : ''}`; });
   const pc = (a, b) => (b ? Math.round(100 * a / b) : 0);
   const [y, mo, dd] = day.split('-');
   return `📊 <b>Resumen Rango 9h · ${dd}/${mo}/${y}</b>\n` +
     (d.n ? `Hoy: ${d.n} operaciones · ✅ TP ${d.tp} · ❌ SL ${d.sl} · ⏰ hora ${d.tm} (${d.tmWon} en positivo)\n${lines.join('\n')}\n💰 Hoy ${money(d.pnl)} · ${d.R >= 0 ? '+' : ''}${d.R.toFixed(2)}R` : 'Hoy: sin operaciones') +
+    (cT.length ? `\n⚠️ Contra tendencia (aviso, fuera de la cartera): ${cT.map((x) => `${icon[x.res]} ${x.asset} ${(x.r >= 0 ? '+' : '') + (x.r || 0).toFixed(2)}R`).join(' · ')}` : '') +
     (sin.length ? `\nSin señal: ${sin.join(', ')}` : '') +
-    `\n\n📈 <b>Acumulado desde ${trades.start || dmy(Date.now())}</b>: ${all.n} operaciones\n✅ TP ${all.tp} · ❌ SL ${all.sl} · ⏰ hora ${all.tm} (${all.tmWon} en positivo)\nGanadas ${all.won}/${all.n} (${pc(all.won, all.n)} %) · TP limpios ${pc(all.tp, all.n)} %\nR total ${all.R >= 0 ? '+' : ''}${all.R.toFixed(2)}R · ${money(all.pnl)} · saldo ${fm(trades.balance)}$`;
+    `\n\n📈 <b>Acumulado desde ${trades.start || dmy(Date.now())}</b>: ${all.n} operaciones\n✅ TP ${all.tp} · ❌ SL ${all.sl} · ⏰ hora ${all.tm} (${all.tmWon} en positivo)\nGanadas ${all.won}/${all.n} (${pc(all.won, all.n)} %) · TP limpios ${pc(all.tp, all.n)} %\nR total ${all.R >= 0 ? '+' : ''}${all.R.toFixed(2)}R · ${money(all.pnl)} · saldo ${fm(trades.balance)}$` +
+    (ca.n ? `\n⚠️ Contra tendencia acumulado: ${ca.n} ops · ✅ ${ca.tp} · ❌ ${ca.sl} · ⏰ ${ca.tm} · ${ca.R >= 0 ? '+' : ''}${ca.R.toFixed(2)}R` : '');
 }
 
 function pushState(msg) {
