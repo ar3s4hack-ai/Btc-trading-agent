@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /* Agente "Rango 9h": rotura del rango 09:00-10:00 con TP/SL fijos.
-   Regla: rango 09:00-10:00 (UTC+2 fijo, como el bot). Desde las 10:00 y hasta las 22:00,
+   Regla: rango 09:00-10:00 (UTC+2 fijo). Desde las 10:00 y hasta las 22:00,
    la primera vela de 5 min que CIERRA fuera del rango da la entrada (una al dia por activo).
    SL/TP: BTC 600/900 puntos, SOL 0.72/1.62, resto 0.5% / 1.125%. Filtro de amplitud
    (250-600 pts) solo en BTC. Solo de lunes a viernes. A las 22:50 se cierra por hora
-   lo que siga abierto (como el bot).
-   Mensajes por Telegram con el formato del bot: ROTURA INMINENTE (entrada provisional en
+   lo que siga abierto.
+   Mensajes por Telegram: ROTURA INMINENTE (entrada provisional en
    el nivel del rango), la senal con su analisis (DUDOSA por spread, poder/margen, $ y EUR,
    ROI, % del saldo, conveniencia, camino al TP, SL protegido, presion con % de compras a
    mercado de la ultima hora, EQH/EQL de 48 h con toques) y los cierres (TP, SL o por hora).
@@ -25,7 +25,7 @@ const RUN_MINUTES = +(process.env.RUN_MINUTES || 0);          // 0 = una sola pa
 const DAEMON = process.env.DAEMON === '1';                     // Railway: siempre encendido, revisa cada pocos segundos
 const POLL_SEC = +(process.env.POLL_SEC || 60);
 const PUSH_EVERY_MIN = 30;
-const TZ_OFF_H = 2;              // UTC+2 fijo todo el ano (como el bot)
+const TZ_OFF_H = 2;              // UTC+2 fijo todo el ano
 const RANGE_H = 9, ENTRY_END_H = 22;
 const TIME_EXIT_MIN = 22 * 60 + 50;
 const IMP_K = +(process.env.IMP_K || 1.2);     // anti falsa ruptura (activos con imp:true): cuerpo de la vela >= IMP_K x ATR(14)
@@ -35,9 +35,8 @@ const TREND_ON = process.env.TREND_FILTER !== '0';
 const TREND_MODE = (process.env.TREND_MODE || 'aviso').toLowerCase();   // aviso: la senal sale marcada CONTRA TENDENCIA (fuera de la cartera) | bloquear: no se envia
 const ADX_BTC = +(process.env.ADX_BTC || 20), ADX_ALT = +(process.env.ADX_ALT || 20), ST_FAC = +(process.env.ST_FAC || 2.5);
 const DEF_SPREAD_PCT = 0.03;     // spread por lado si no se conoce (% del precio)
-// spread por lado deducido de los importes del bot (spread "ya descontado").
-// Ajustado con las senales del 14/10/2026: el bot usa 20.000 $ de poder y $ = poder x (dist -/+ 2 x spread) / entrada.
-//   BTC 600/900 pts y spread ~0 · TAO/HBAR 0,5 % / 1,125 % (TP = 2,25 x SL) · SOL 0,72/1,62 pts
+// spread por lado ("ya descontado"): $ = poder x (dist -/+ 2 x spread) / entrada.
+//   BTC 600/900 pts y spread ~0 · altcoins 0,5 % / 1,125 % (TP = 2,25 x SL) · SOL 0,72/1,62 pts
 const ASSETS = [
   { name: 'BTC',  bin: 'BTCUSDT',  kc: 'BTC-USDT',  mode: 'pts', tp: 900,   sl: 600,  amp: [250, 600], spread: 0, trend: 'adx5' },
   { name: 'HYPE', bin: 'HYPEUSDT', kc: 'HYPE-USDT', mode: 'pct', tp: 1.125, sl: 0.5 },
@@ -78,17 +77,37 @@ async function findChat(token) {   // sin TELEGRAM_CHAT_ID: usa el ultimo chat q
   } catch (e) { console.error('getUpdates:', e.message); }
   return CHAT;
 }
-async function telegram(text) {
-  const token = process.env.TELEGRAM_BOT_TOKEN; const chat = CHAT || (token ? await findChat(token) : null);
-  if (!token || !chat) { console.log('[telegram omitido]' + (token ? ' (escribe al bot para detectar el chat)' : '') + '\n' + text.replace(/<[^>]+>/g, '') + '\n'); return false; }
+// Grupos extra donde publicar tambien todo lo que envia el agente (p. ej. el grupo de amigos): IDs -100... separados por comas
+const EXTRA_CHATS = (process.env.EXTRA_CHAT_IDS || '').split(',').map((x) => x.trim()).filter(Boolean);
+async function sendTo(token, chat, text) {
   try {
     const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: chat, text, parse_mode: 'HTML', disable_web_page_preview: true }),
     });
-    if (!res.ok) { console.error('telegram:', res.status, await res.text()); return false; }
+    if (!res.ok) { console.error('telegram', chat + ':', res.status, await res.text()); return false; }
     return true;
-  } catch (e) { console.error('telegram:', e.message); return false; }
+  } catch (e) { console.error('telegram', chat + ':', e.message); return false; }
+}
+async function telegram(text) {   // devuelve el resultado del chat principal; los extra no bloquean
+  const token = process.env.TELEGRAM_BOT_TOKEN; const chat = CHAT || (token ? await findChat(token) : null);
+  if (!token || !chat) { console.log('[telegram omitido]' + (token ? ' (escribe al bot para detectar el chat)' : '') + '\n' + text.replace(/<[^>]+>/g, '') + '\n'); return false; }
+  const ok = await sendTo(token, chat, text);
+  for (const c of EXTRA_CHATS) if (c !== String(chat)) await sendTo(token, c, text);
+  return ok;
+}
+// Comprueba, sin publicar nada, que el bot esta en cada grupo extra y puede escribir
+async function checkExtraChats() {
+  const token = process.env.TELEGRAM_BOT_TOKEN; if (!token || !EXTRA_CHATS.length) return;
+  try {
+    const me = (await (await fetch(`https://api.telegram.org/bot${token}/getMe`)).json()).result;
+    for (const c of EXTRA_CHATS.filter((x) => x !== String(CHAT))) {
+      const j = await (await fetch(`https://api.telegram.org/bot${token}/getChatMember?chat_id=${encodeURIComponent(c)}&user_id=${me.id}`)).json();
+      if (!j.ok) { console.error(`grupo ${c}: el bot @${me.username} no tiene acceso (${j.description})`); continue; }
+      const m = j.result, ok = m.status === 'administrator' || m.status === 'creator' || (m.status === 'member' && m.can_send_messages !== false);
+      console.log(`grupo ${c}: bot @${me.username} ${m.status}${ok ? '' : ' SIN PERMISO PARA ESCRIBIR'}`);
+    }
+  } catch (e) { console.error('comprobacion de grupos:', e.message); }
 }
 
 // ---------------- datos (Binance publico; KuCoin de respaldo) ----------------
@@ -159,7 +178,7 @@ function pivots(B, upto, n = 5) { // pivotes confirmados hasta la vela 'upto'
   return { hi, lo };
 }
 
-// ---------------- dinero (formato del bot) ----------------
+// ---------------- dinero ----------------
 // $ = poder x (distancia -/+ 2 x spread) / entrada ; ROI sobre el poder ; % sobre el saldo
 function moneyLines(a, e, tp, sl, balance, rate) {
   const sp = a.spread ?? e * DEF_SPREAD_PCT / 100;
@@ -173,7 +192,7 @@ function moneyLines(a, e, tp, sl, balance, rate) {
   ].join('\n');
   return { txt, tpUsd, slUsd, sp, tpD, slD };
 }
-// Bloque del plan como el bot: TP y SL fijos + cada EQH/EQL de 48 h en el camino al TP y junto al SL, con su $.
+// Bloque del plan: TP y SL fijos + cada EQH/EQL de 48 h en el camino al TP y junto al SL, con su $.
 function planBlock(e, tp, sl, m, dir, lv) {
   const row = (lab, px, d, usd) => `${lab.padEnd(8)} ${fx(px, e).padStart(10)}  ${(d >= 0 ? '+' : '-') + fx(Math.abs(d), e)} pts  ${money(usd)}`;
   const sub = (q, kind) => `         ${kind} de 48 h (${q.n} toques en 5 min)`;
@@ -190,7 +209,7 @@ function planBlock(e, tp, sl, m, dir, lv) {
   return `<pre>${L.join('\n')}</pre>`;
 }
 
-// ---------------- analisis tipo bot ----------------
+// ---------------- analisis de la senal ----------------
 function eqLevels(B, i, A) {
   const pv = pivots(B, i), from = Math.max(0, i - 576), tol = A[i] * 0.15;
   const eq = (arr, isHi) => { const ps = arr.filter((p) => p.i >= from); const lv = [];
@@ -373,7 +392,8 @@ async function main() {
   const st = loadJSON(STATE, { assets: {} });
   const trades = loadJSON(TRADES, null) || { capital: CAPITAL, balance: CAPITAL, list: [] };
   const t0 = Date.now(); let lastPush = Date.now();
-  const hello = () => telegram(`✅ <b>Agente Rango 9h activado</b>\nActivos: ${ASSETS.map((x) => x.name).join(', ')}\nCartera simulada: $${CAPITAL} · poder $${POSITION_USD} por operacion\nRango 09:00-10:00 (UTC+2) · entradas de 10:00 a 22:00, lunes a viernes · cierre por hora 22:50`);
+  await checkExtraChats();
+  const hello =() => telegram(`✅ <b>Agente Rango 9h activado</b>\nActivos: ${ASSETS.map((x) => x.name).join(', ')}\nCartera simulada: $${CAPITAL} · poder $${POSITION_USD} por operacion\nRango 09:00-10:00 (UTC+2) · entradas de 10:00 a 22:00, lunes a viernes · cierre por hora 22:50`);
   if (first) await hello();
   trades.start ||= dmy(Date.now());
   let rate = null, rateT = 0;
@@ -398,4 +418,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch((e) => { console.error(e); process.exit(1); });
-module.exports = { summaryText, slTp, rangeOf, analyze, dayKey, loc, ASSETS, processAsset, moneyLines, planBlock };
+module.exports = { summaryText, slTp, rangeOf, analyze, dayKey, loc, ASSETS, processAsset, moneyLines, planBlock, telegram, checkExtraChats };
