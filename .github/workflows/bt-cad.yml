@@ -5,13 +5,16 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
         q:
-          - "symbols=BTCUSDT&tzFix=1&fee=0.02&wkd=1&tEx=1&m7slP=600&m7tpP=800&ampMin=250&ampMax=600&adxMin=20&v=base:|ha:haF=1|zl:zlF=1|ds:dsF=1|b1:bbF=1|b2:bbF=2|se:seF=1|hazl:haF=1,zlF=1"
-          - "symbols=HYPEUSDT,TAOUSDT,HBARUSDT,UNIUSDT,SUIUSDT,SOLUSDT,LINKUSDT&tzFix=1&fee=0.02&wkd=1&tEx=1&st1h=1&adxMin=20&adxH=1&v=base:|ha:haF=1|zl:zlF=1|ds:dsF=1|b1:bbF=1|b2:bbF=2|se:seF=1|hazl:haF=1,zlF=1"
+          - "mode=ce&tf=15m&days=365&tag=CE15&symbols=BTCUSDT,HYPEUSDT,TAOUSDT,HBARUSDT,UNIUSDT,SUIUSDT,SOLUSDT,LINKUSDT&v=base:|rr2:tpRR=1|s6:minScore=6"
+          - "mode=ce&tf=5m&days=365&tag=CE5&symbols=BTCUSDT,HYPEUSDT,TAOUSDT,HBARUSDT,UNIUSDT,SUIUSDT,SOLUSDT,LINKUSDT&v=base: || mode=ce&tf=15m&days=730&tag=CE15-2y&symbols=BTCUSDT,HYPEUSDT,TAOUSDT,HBARUSDT,UNIUSDT,SUIUSDT,SOLUSDT,LINKUSDT&v=base:"
+          - "tag=R15-BTC&tf=15m&symbols=BTCUSDT&tzFix=1&fee=0.02&wkd=1&tEx=1&m7slP=600&m7tpP=800&ampMin=250&ampMax=600&adxMin=20&v=base:|noAdx:adxMin=0|ha:haF=1|zl:zlF=1|se:seF=1|ce5:ceV=5|ceMaj:ceV=1"
+          - "tag=R15-ALT&tf=15m&symbols=HYPEUSDT,TAOUSDT,HBARUSDT,UNIUSDT,SUIUSDT,SOLUSDT,LINKUSDT&tzFix=1&fee=0.02&wkd=1&tEx=1&st1h=1&adxMin=20&adxH=1&v=base:|noFilt:st1h=0,adxMin=0|ha:haF=1|zl:zlF=1|se:seF=1|ce5:ceV=5|ceMaj:ceV=1"
+          - "tag=R5-BTC&tf=5m&symbols=BTCUSDT&tzFix=1&fee=0.02&wkd=1&tEx=1&m7slP=600&m7tpP=800&ampMin=250&ampMax=600&adxMin=20&v=base:|ce5:ceV=5|ceMaj:ceV=1 || tag=R5-ALT&tf=5m&symbols=HYPEUSDT,TAOUSDT,HBARUSDT,UNIUSDT,SUIUSDT,SOLUSDT,LINKUSDT&tzFix=1&fee=0.02&wkd=1&tEx=1&st1h=1&adxMin=20&adxH=1&v=base:|ce5:ceV=5|ceMaj:ceV=1"
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2

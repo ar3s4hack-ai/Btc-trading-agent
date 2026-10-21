@@ -138,7 +138,7 @@ class Tracker {
   }
 }
 
-export function simulate(B: Bar[], Pin: Record<string, number>) {
+export function simulate(B: Bar[], Pin: Record<string, number>, ext?: (i: number, d: number) => boolean) {
   const P = { ...DEFAULTS, ...Pin };
   const N = B.length;
   const barMs = N > 1 ? B[1].t - B[0].t : 300000;
@@ -465,7 +465,7 @@ export function simulate(B: Bar[], Pin: Record<string, number>) {
         const cadOk = (!P.haF || d7 * (haEC[i] - haEO[i]) > 0) && (!P.zlF || d7 * (zlM[i] - zlE[i]) > 0) && (!P.dsF || (d7 === 1 ? dsScore[i] > 0.5 : dsScore[i] < 0.5))
           && (!P.bbF || (P.bbF === 1 ? d7 * (b.c - (bbM[i] + d7 * 2 * bbS[i])) > 0 : d7 * (b.c - (bbM[i] + d7 * 2 * bbS[i])) <= 0)) && (!P.seF || seSig[i] === d7);
         const e2Ok = cadOk && vwOk && (!P.e200 || (d7 === 1 ? b.c > E200c[i] : b.c < E200c[i]));
-        const emaOk = stOk && adxOk && e2Ok && volOk && brkOk && cpOk && wkOk && (!P.emaF || (d7 === 1 ? E10[i] > E50[i] : E10[i] < E50[i])) && (!P.trendF || trendOk(i, d7)) && (!P.wkd || (new Date(b.t).getUTCDay() % 6 !== 0));
+        const emaOk = stOk && adxOk && e2Ok && volOk && brkOk && cpOk && wkOk && (!P.emaF || (d7 === 1 ? E10[i] > E50[i] : E10[i] < E50[i])) && (!P.trendF || trendOk(i, d7)) && (!P.wkd || (new Date(b.t).getUTCDay() % 6 !== 0)) && (!ext || ext(i, d7));
         if (bodyOk && ampOk && emaOk && okT(i, d7)) {
           if (P.m7slP > 0 || !P.m7mode) {
             const slDist = P.m7slP > 0 ? P.m7slP * (kk as number) : b.c * P.rgSL / 100;
