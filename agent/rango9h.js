@@ -86,6 +86,7 @@ async function sendTo(token, chat, text) {
       body: JSON.stringify({ chat_id: chat, text, parse_mode: 'HTML', disable_web_page_preview: true }),
     });
     if (!res.ok) { console.error('telegram', chat + ':', res.status, await res.text()); return false; }
+    console.log(`enviado a ${chat}: ${text.replace(/<[^>]+>/g, '').split('\n').filter(Boolean).slice(0, 2).join(' | ').slice(0, 140)}`);   // registro para verificar envios
     return true;
   } catch (e) { console.error('telegram', chat + ':', e.message); return false; }
 }
