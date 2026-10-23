@@ -85,7 +85,15 @@ async function sendTo(token, chat, text) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: chat, text, parse_mode: 'HTML', disable_web_page_preview: true }),
     });
-    if (!res.ok) { console.error('telegram', chat + ':', res.status, await res.text()); return false; }
+    if (!res.ok) {
+      const err = await res.text();
+      if (res.status === 400 && /parse entities/.test(err)) {   // HTML roto: se reenvia como texto plano para no perder la senal
+        const plain = text.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+        const r2 = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: chat, text: plain, disable_web_page_preview: true }) });
+        if (r2.ok) { console.log(`enviado a ${chat} (texto plano, el HTML fallo): ${plain.split('\n').filter(Boolean).slice(0, 2).join(' | ').slice(0, 140)}`); return true; }
+      }
+      console.error('telegram', chat + ':', res.status, err); return false;
+    }
     console.log(`enviado a ${chat}: ${text.replace(/<[^>]+>/g, '').split('\n').filter(Boolean).slice(0, 2).join(' | ').slice(0, 140)}`);   // registro para verificar envios
     return true;
   } catch (e) { console.error('telegram', chat + ':', e.message); return false; }
@@ -160,7 +168,7 @@ async function trendCheck(a, B, iB, dir, t) {
   if (a.trend === 'adx5') {
     const ax = stAdx(B.slice(0, iB + 1)).adx[iB];
     const ok = isFinite(ax) && ax >= ADX_BTC;
-    return { ok, txt: `ADX 5m ${isFinite(ax) ? ax.toFixed(0) : '-'} ${ok ? '≥' : '<'} ${ADX_BTC}` };
+    return { ok, txt: `ADX 5m ${isFinite(ax) ? ax.toFixed(0) : '-'} ${ok ? '≥' : '&lt;'} ${ADX_BTC}` };
   }
   let H;
   try { H = (await klines(a, 300, '1h')).filter((x) => x.ct < t); } catch (e) { return { ok: true, txt: 'filtro 1h sin datos (no se aplica)' }; }
