@@ -10,11 +10,9 @@ jobs:
       fail-fast: false
       matrix:
         q:
-          - "mode=ce&tf=15m&days=365&tag=CE15&symbols=BTCUSDT,HYPEUSDT,TAOUSDT,HBARUSDT,UNIUSDT,SUIUSDT,SOLUSDT,LINKUSDT&v=base:|rr2:tpRR=1|s6:minScore=6"
-          - "mode=ce&tf=5m&days=365&tag=CE5&symbols=BTCUSDT,HYPEUSDT,TAOUSDT,HBARUSDT,UNIUSDT,SUIUSDT,SOLUSDT,LINKUSDT&v=base: || mode=ce&tf=15m&days=730&tag=CE15-2y&symbols=BTCUSDT,HYPEUSDT,TAOUSDT,HBARUSDT,UNIUSDT,SUIUSDT,SOLUSDT,LINKUSDT&v=base:"
-          - "tag=R15-BTC&tf=15m&symbols=BTCUSDT&tzFix=1&fee=0.02&wkd=1&tEx=1&m7slP=600&m7tpP=800&ampMin=250&ampMax=600&adxMin=20&v=base:|noAdx:adxMin=0|ha:haF=1|zl:zlF=1|se:seF=1|ce5:ceV=5|ceMaj:ceV=1"
-          - "tag=R15-ALT&tf=15m&symbols=HYPEUSDT,TAOUSDT,HBARUSDT,UNIUSDT,SUIUSDT,SOLUSDT,LINKUSDT&tzFix=1&fee=0.02&wkd=1&tEx=1&st1h=1&adxMin=20&adxH=1&v=base:|noFilt:st1h=0,adxMin=0|ha:haF=1|zl:zlF=1|se:seF=1|ce5:ceV=5|ceMaj:ceV=1"
-          - "tag=R5-BTC&tf=5m&symbols=BTCUSDT&tzFix=1&fee=0.02&wkd=1&tEx=1&m7slP=600&m7tpP=800&ampMin=250&ampMax=600&adxMin=20&v=base:|ce5:ceV=5|ceMaj:ceV=1 || tag=R5-ALT&tf=5m&symbols=HYPEUSDT,TAOUSDT,HBARUSDT,UNIUSDT,SUIUSDT,SOLUSDT,LINKUSDT&tzFix=1&fee=0.02&wkd=1&tEx=1&st1h=1&adxMin=20&adxH=1&v=base:|ce5:ceV=5|ceMaj:ceV=1"
+          - "mode=coq&tf=5m&tag=COQ5&symbols=BTCUSDT,HYPEUSDT,TAOUSDT,HBARUSDT,UNIUSDT,SUIUSDT,SOLUSDT,LINKUSDT&v=checklist:v=0|chk+patron:v=1|triangulos:v=2 || mode=coq&tf=15m&htf1=60&htf2=240&tag=COQ15&symbols=BTCUSDT,HYPEUSDT,TAOUSDT,HBARUSDT,UNIUSDT,SUIUSDT,SOLUSDT,LINKUSDT&v=checklist:v=0|chk+patron:v=1|triangulos:v=2"
+          - "tag=R5-BTC&tf=5m&symbols=BTCUSDT&tzFix=1&fee=0.02&wkd=1&tEx=1&m7slP=600&m7tpP=800&ampMin=250&ampMax=600&adxMin=20&v=base:|cqH:cq=1|cqHn:cq=2|cqB:cq=3|cqBn:cq=4|room1:cq=5,cqK=1|room05:cq=5,cqK=0.5|ema5m:cq=6"
+          - "tag=R5-ALT&tf=5m&symbols=HYPEUSDT,TAOUSDT,HBARUSDT,UNIUSDT,SUIUSDT,SOLUSDT,LINKUSDT&tzFix=1&fee=0.02&wkd=1&tEx=1&st1h=1&adxMin=20&adxH=1&rgTP=1.125&v=base:|cqH:cq=1|cqHn:cq=2|cqB:cq=3|cqBn:cq=4|room1:cq=5,cqK=1|room05:cq=5,cqK=0.5|ema5m:cq=6"
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
