@@ -5,13 +5,13 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         q:
-          - "mode=kz2&tf=5m&tag=K2-BTC&symbols=BTCUSDT&v=brkA:src=asia,win=lon,mode=brk,sl=mid,tp=2|brkA-t:src=asia,win=lon,mode=brk,sl=mid,tp=2,t=1|brkA-t-1R:src=asia,win=lon,mode=brk,sl=mid,tp=1,t=1|brkL:src=lon,win=nyam,mode=brk,sl=mid,tp=2|brkL-t:src=lon,win=nyam,mode=brk,sl=mid,tp=2,t=1|brkPD-t:src=pd,win=day,mode=brk,sl=atr,k=1,tp=2,t=1|revA-t:src=asia,win=lon,mode=rev,tp=2,t=1|revL-t:src=lon,win=nyam,mode=rev,tp=2,t=1|revPD-t:src=pd,win=day,mode=rev,tp=2,t=1"
-          - "mode=kz2&tf=5m&tag=K2-ALT&symbols=HYPEUSDT,TAOUSDT,HBARUSDT,UNIUSDT,SUIUSDT,SOLUSDT,LINKUSDT&v=brkA:src=asia,win=lon,mode=brk,sl=mid,tp=2|brkA-t:src=asia,win=lon,mode=brk,sl=mid,tp=2,t=1|brkA-t-1R:src=asia,win=lon,mode=brk,sl=mid,tp=1,t=1|brkL:src=lon,win=nyam,mode=brk,sl=mid,tp=2|brkL-t:src=lon,win=nyam,mode=brk,sl=mid,tp=2,t=1|brkPD-t:src=pd,win=day,mode=brk,sl=atr,k=1,tp=2,t=1|revA-t:src=asia,win=lon,mode=rev,tp=2,t=1|revL-t:src=lon,win=nyam,mode=rev,tp=2,t=1|revPD-t:src=pd,win=day,mode=rev,tp=2,t=1"
+          - "mode=kz2&tf=5m&days=730&tag=K2y-BTC&symbols=BTCUSDT&v=brkA-t:src=asia,win=lon,mode=brk,sl=mid,tp=2,t=1|brkA-t-1R:src=asia,win=lon,mode=brk,sl=mid,tp=1,t=1|brkL-t:src=lon,win=nyam,mode=brk,sl=mid,tp=2,t=1|brkPD-t:src=pd,win=day,mode=brk,sl=atr,k=1,tp=2,t=1 || tag=R2y-BTC&tf=5m&days=730&symbols=BTCUSDT&tzFix=1&fee=0.02&wkd=1&tEx=1&m7slP=600&m7tpP=800&ampMin=250&ampMax=600&adxMin=20&v=rango:"
+          - "mode=kz2&tf=5m&days=730&tag=K2y-ALT&symbols=HYPEUSDT,TAOUSDT,HBARUSDT,UNIUSDT,SUIUSDT,SOLUSDT,LINKUSDT&v=brkA-t:src=asia,win=lon,mode=brk,sl=mid,tp=2,t=1|brkA-t-1R:src=asia,win=lon,mode=brk,sl=mid,tp=1,t=1|brkL-t:src=lon,win=nyam,mode=brk,sl=mid,tp=2,t=1|brkPD-t:src=pd,win=day,mode=brk,sl=atr,k=1,tp=2,t=1 || tag=R2y-ALT&tf=5m&days=730&symbols=HYPEUSDT,TAOUSDT,HBARUSDT,UNIUSDT,SUIUSDT,SOLUSDT,LINKUSDT&tzFix=1&fee=0.02&wkd=1&tEx=1&st1h=1&adxMin=20&adxH=1&rgTP=1.125&v=rango:"
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
