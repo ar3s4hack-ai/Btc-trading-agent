@@ -4,6 +4,7 @@ import { loadBars, simulate, DEFAULTS, type Bar } from "./index.ts";
 import { simCE, simCEFull, statsCE, type CEOpt } from "./ce.ts";
 import { coqueto, simCoq, type Coq } from "./coq.ts";
 import { simKZ } from "./kz.ts";
+import { simRule } from "./kz2.ts";
 
 const f1 = (x: number) => (x >= 0 ? "+" : "") + x.toFixed(1);
 const Q = (Bun.env.Q || "").split("||").map((x) => x.trim()).filter(Boolean);
@@ -16,7 +17,18 @@ for (const q of Q) {
   console.log(`::notice::${tag} DATA ` + data.map((d) => `${d.s.replace("USDT", "")}:${d.bars.length}`).join(" "));
   const V = (u.get("v") || "base:").split("|").filter(Boolean).map((x) => { const [n, kv = ""] = x.split(":"); const o: Record<string, number> = {};
     for (const p of kv.split(",").filter(Boolean)) { const [k, v] = p.split("="); o[k] = +v; } return { n, o }; });
-  if (mode === "kz") {
+  if (mode === "kz2") {
+    const VR = (u.get("v") || "").split("|").filter(Boolean).map((x) => { const [n, kv = ""] = x.split(":"); const o: Record<string, any> = {};
+      for (const p of kv.split(",").filter(Boolean)) { const [k, v] = p.split("="); o[k] = isNaN(+v) ? v : +v; } return { n, o }; });
+    for (const { n, o } of VR) {
+      let ops = 0, w = 0, R = 0, R2 = 0, R10 = 0, a1 = 0, a2 = 0, pos = 0; const per: string[] = []; const rk: number[] = [];
+      for (const d of data) { const T = simRule(d.bars, o as any); const half = d.bars[Math.floor(d.bars.length / 2)].t; let r0 = 0, r2 = 0;
+        for (const x of T) { const n2 = x.r - 0.02 / x.riskPct; ops++; if (x.r > 0) w++; R += x.r; R2 += n2; R10 += x.r - 0.10 / x.riskPct; r0 += x.r; r2 += n2; if (d.bars[x.i].t < half) a1 += n2; else a2 += n2; rk.push(x.riskPct); }
+        if (r2 > 0) pos++; per.push(`${d.s.replace("USDT", "")}:${f1(r2)}`); }
+      rk.sort((p, q) => p - q);
+      console.log(`::notice::${tag} ${n} ops=${ops} acierto=${ops ? (100 * w / ops).toFixed(1) : 0}% Rbruto=${f1(R)} Rneto002=${f1(R2)} Rneto010=${f1(R10)} mitades002=${f1(a1)}/${f1(a2)} pos002=${pos}/${data.length} riesgoMed%=${rk.length ? rk[rk.length >> 1].toFixed(2) : "-"} | neto002 ${per.join(" ")}`);
+    }
+  } else if (mode === "kz") {
     const st: Record<string, number> = {}; const per: Record<string, string[]> = {}; const agg: Record<string, { n: number; w: number; R: number; R2: number; R10: number; a1: number; a2: number; pos: number; rk: number[]; rr: number[] }> = {};
     for (const d of data) { const r = simKZ(d.bars); for (const [k, v] of Object.entries(r.st)) st[k] = (st[k] ?? 0) + v;
       const half = d.bars[Math.floor(d.bars.length / 2)].t;
