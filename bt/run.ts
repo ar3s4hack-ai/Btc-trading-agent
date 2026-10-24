@@ -3,6 +3,7 @@
 import { loadBars, simulate, DEFAULTS, type Bar } from "./index.ts";
 import { simCE, simCEFull, statsCE, type CEOpt } from "./ce.ts";
 import { coqueto, simCoq, type Coq } from "./coq.ts";
+import { simKZ } from "./kz.ts";
 
 const f1 = (x: number) => (x >= 0 ? "+" : "") + x.toFixed(1);
 const Q = (Bun.env.Q || "").split("||").map((x) => x.trim()).filter(Boolean);
@@ -15,7 +16,18 @@ for (const q of Q) {
   console.log(`::notice::${tag} DATA ` + data.map((d) => `${d.s.replace("USDT", "")}:${d.bars.length}`).join(" "));
   const V = (u.get("v") || "base:").split("|").filter(Boolean).map((x) => { const [n, kv = ""] = x.split(":"); const o: Record<string, number> = {};
     for (const p of kv.split(",").filter(Boolean)) { const [k, v] = p.split("="); o[k] = +v; } return { n, o }; });
-  if (mode === "coq") {
+  if (mode === "kz") {
+    const st: Record<string, number> = {}; const per: Record<string, string[]> = {}; const agg: Record<string, { n: number; w: number; R: number; R2: number; R10: number; a1: number; a2: number; pos: number; rk: number[]; rr: number[] }> = {};
+    for (const d of data) { const r = simKZ(d.bars); for (const [k, v] of Object.entries(r.st)) st[k] = (st[k] ?? 0) + v;
+      const half = d.bars[Math.floor(d.bars.length / 2)].t;
+      for (const [k, T] of Object.entries(r.trades)) { const g = (agg[k] ??= { n: 0, w: 0, R: 0, R2: 0, R10: 0, a1: 0, a2: 0, pos: 0, rk: [], rr: [] }); let r2 = 0, r0 = 0;
+        for (const x of T) { const n2 = x.r - 0.02 / x.riskPct; g.n++; if (x.r > 0) g.w++; g.R += x.r; g.R2 += n2; g.R10 += x.r - 0.10 / x.riskPct; r2 += n2; r0 += x.r; if (d.bars[x.i].t < half) g.a1 += n2; else g.a2 += n2; g.rk.push(x.riskPct); g.rr.push(x.rrT); }
+        if (r2 > 0) g.pos++; (per[k] ??= []).push(`${d.s.replace("USDT", "")}:${f1(r0)}/${f1(r2)}`); } }
+    const pc = (a: number, b: number) => (b ? (100 * a / b).toFixed(0) : "-") + "%";
+    console.log(`::notice::${tag} STATS dias=${st.cyc} | Londres toca max Asia ${pc(st.lonAH, st.cyc)} min ${pc(st.lonAL, st.cyc)} alguno ${pc(st.lonAny, st.cyc)} ambos ${pc(st.lonBoth, st.cyc)} | NY(9:30-16) toca max Londres ${pc(st.nyLH, st.days)} min ${pc(st.nyLL, st.days)} alguno ${pc(st.nyAny, st.days)} ambos ${pc(st.nyBoth, st.days)} | dia toca PDH o PDL ${pc(st.pdAny, st.pdN)}`);
+    const med = (a: number[]) => { const x = [...a].sort((p, q) => p - q); return x.length ? x[x.length >> 1] : 0; };
+    for (const [k, g] of Object.entries(agg)) console.log(`::notice::${tag} ${k} ops=${g.n} acierto=${g.n ? (100 * g.w / g.n).toFixed(1) : 0}% Rbruto=${f1(g.R)} Rneto002=${f1(g.R2)} Rneto010=${f1(g.R10)} mitades002=${f1(g.a1)}/${f1(g.a2)} pos002=${g.pos}/${data.length} riesgoMed%=${med(g.rk).toFixed(2)} RRobjMed=${med(g.rr).toFixed(1)} | bruto/neto002 ${per[k].join(" ")}`);
+  } else if (mode === "coq") {
     const h1 = +(u.get("htf1") || 15) * 60000, h2 = +(u.get("htf2") || 60) * 60000;
     const qs = data.map((d) => coqueto(d.bars, h1, h2));
     for (const { n, o } of V) {
